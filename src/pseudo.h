@@ -5,8 +5,23 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <map>
 
 #define NONE 0
+
+/// --------------------
+/// Position
+/// --------------------
+
+struct Position {
+    int index, line, column;
+    std::string file_name;
+    Position(int idx = 0, int ln = 0, int col = 0, const std::string& _file_name = "")
+        : index(idx), line(ln), column(col), file_name(_file_name) {}
+    void advance(char);
+    std::string get_pos();
+    friend std::ostream& operator<<(std::ostream &out, Position &pos);
+};
 
 /// --------------------
 /// Token
@@ -25,21 +40,23 @@ const std::string TOKEN_ERROR{"ERROR"};
 
 class Token {
 public:
-    Token(const std::string& _type = "")
-        : type(_type) {}
+    Token(const std::string& _type = "", Position _pos = Position())
+        : type(_type), pos(_pos) {}
     virtual std::string get_tok();
     virtual std::string get_type();
+    virtual Position get_pos() { return pos;}
     virtual inline bool isnumber() { return false;}
     friend std::ostream& operator<<(std::ostream &out, Token &token);
 protected:
     std::string type;
+    Position pos;
 };
 
 template<typename T>
 class TypedToken: public Token {
 public:
-    TypedToken(const std::string& _type, const T &_value) 
-        : Token(_type), value(_value) {}
+    TypedToken(const std::string& _type, const Position &_pos, const T &_value) 
+        : Token(_type, _pos), value(_value) {}
     virtual std::string get_tok();
     virtual inline bool isnumber() { return type == TOKEN_INT || type == TOKEN_FLOAT;}
 protected:
@@ -68,13 +85,13 @@ public:
 
 class ErrorNode: public Node {
 public:
-    ErrorNode(std::shared_ptr<ErrorToken> _tok)
+    ErrorNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
     virtual std::string get_node();
     virtual ~ErrorNode() {tok.reset();}
     virtual std::string get_type() {return NODE_ERROR;}
 protected:
-    std::shared_ptr<ErrorToken> tok;
+    std::shared_ptr<Token> tok;
 };
 
 class NumberNode: public Node {
@@ -118,20 +135,6 @@ protected:
     TokenList tokens;
     std::shared_ptr<Token> current_tok;
     int64_t tok_index;
-};
-
-/// --------------------
-/// Position
-/// --------------------
-
-struct Position {
-    int index, line, column;
-    std::string file_name;
-    Position(int idx = 0, int ln = 0, int col = 0, const std::string& _file_name = "")
-        : index(idx), line(ln), column(col), file_name(_file_name) {}
-    void advance(char);
-    std::string get_pos();
-    friend std::ostream& operator<<(std::ostream &out, Position &pos);
 };
 
 /// --------------------

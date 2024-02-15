@@ -1,5 +1,5 @@
 VPATH = src
-objects = pseudo.o color.o shell.o
+objects = color.o pseudo.o shell.o
 
 shell : $(objects)
 	g++ $(objects) -o shell
@@ -7,7 +7,7 @@ shell : $(objects)
 shell.o : shell.cpp pseudo.o color.o
 	g++ -c shell.cpp
 
-pseudo.o : pseudo.h pseudo.cpp
+pseudo.o : pseudo.h pseudo.cpp color.o
 	g++ -c src/pseudo.cpp
 
 color.o : color.h color.cpp

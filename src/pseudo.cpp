@@ -1,6 +1,33 @@
 #include "pseudo.h"
+#include "color.h"
 #include <iostream>
 #include <sstream>
+
+/// --------------------
+/// Position
+/// --------------------
+
+void Position::advance(char current_char) {
+    index++;
+    column++;
+    if(current_char == '\n') {
+        line++;
+        column = 0;
+    }
+}
+
+std::string Position::get_pos() {
+    std::stringstream ss;
+    ss << (*this);
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+std::ostream& operator<<(std::ostream &out, Position &pos) {
+    out << "File: " << pos.file_name << ", Line: " << pos.line << ", Column: " << pos.column;
+    return out;
+}
 
 /// --------------------
 /// Token
@@ -22,13 +49,22 @@ std::ostream& operator<<(std::ostream &out, Token &token) {
 template<typename T>
 std::string TypedToken<T>::get_tok() {
     std::stringstream ss;
+    if(type == TOKEN_ERROR)
+        ss << Color(0xFF, 0x39, 0x6E);
     ss << type << ": " << value;
+    if(type == TOKEN_ERROR)
+        ss << Color(0xDB, 0x80, 0xFF) << ". At " << pos << RESET;
     std::string ret;
     std::getline(ss, ret);
     return ret;
 }
 
 std::ostream& operator<<(std::ostream &out, TokenList &tokens) {
+    if(!tokens.empty() && tokens.front()->get_type() == TOKEN_ERROR) {
+        out << (*tokens.front());
+        return out;
+    }
+    
     out << "{";
     for(auto tok : tokens) {
         out << (*tok);
@@ -84,7 +120,10 @@ std::shared_ptr<Node> Parser::factor() {
         advance();
         return std::make_shared<NumberNode>(tok);
     }
-    return std::make_shared<ErrorNode>(std::make_shared<ErrorToken>(TOKEN_ERROR, "Not a factor"));
+    std::string error_msg{"Not a factor: Expect an INT or a FLOAT, found \""};
+    error_msg += tok->get_tok() + "\"";
+    std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, tok->get_pos(), error_msg);
+    return std::make_shared<ErrorNode>(error_token);
 }
 
 std::shared_ptr<Node> Parser::term() {
@@ -112,36 +151,19 @@ std::shared_ptr<Node> Parser::bin_op(std::function<std::shared_ptr<Node>()> func
 
 std::shared_ptr<Node> Parser::parse() {
     std::shared_ptr<Node> ret = expr();
+    if(ret->get_type() == NODE_ERROR) {
+        return ret;
+    }
     if(tok_index != tokens.size()) {
-        ret = std::make_shared<ErrorNode>(std::make_shared<ErrorToken>(TOKEN_ERROR, "Syntex Error"));
+        std::string error_msg = "Syntex Error: Found resundant tokens: ";
+        Position pos = tokens[tok_index]->get_pos();
+        while(tok_index != tokens.size())
+            error_msg += tokens[tok_index++]->get_tok();
+            if(tok_index != tokens.size())
+                error_msg += ", ";
+        return std::make_shared<ErrorNode>(std::make_shared<ErrorToken>(TOKEN_ERROR, pos, error_msg));
     }
     return ret;
-}
-
-/// --------------------
-/// Position
-/// --------------------
-
-void Position::advance(char current_char) {
-    index++;
-    column++;
-    if(current_char == '\n') {
-        line++;
-        column = 0;
-    }
-}
-
-std::string Position::get_pos() {
-    std::stringstream ss;
-    ss << (*this);
-    std::string ret;
-    std::getline(ss, ret);
-    return ret;
-}
-
-std::ostream& operator<<(std::ostream &out, Position &pos) {
-    out << "File: " << pos.file_name << ", Line: " << pos.line << ", Column: " << pos.column;
-    return out;
 }
 
 /// --------------------
@@ -158,6 +180,13 @@ void Lexer::advance() {
 }
 
 TokenList Lexer::make_tokens() {
+    static std::map<char, std::string> TO_TOKEN_TYPE {
+        {'+', TOKEN_ADD}, {'-', TOKEN_SUB}, 
+        {'*', TOKEN_MUL}, {'/', TOKEN_DIV},
+        {'%', TOKEN_MOD}, {'(', TOKEN_LEFT_PAREN},
+        {')', TOKEN_RIGHT_PAREN}
+    };
+
     TokenList tokens;
     advance();
     while(current_char != NONE) {
@@ -169,32 +198,8 @@ TokenList Lexer::make_tokens() {
             case ' ': case '\t': case '\n':
             advance(); break;
             
-            case '+':
-            tokens.push_back(std::make_shared<Token>(TOKEN_ADD));
-            advance(); break;
-            
-            case '-':
-            tokens.push_back(std::make_shared<Token>(TOKEN_SUB));
-            advance(); break;
-            
-            case '*':
-            tokens.push_back(std::make_shared<Token>(TOKEN_MUL));
-            advance(); break;
-          
-            case '/':
-            tokens.push_back(std::make_shared<Token>(TOKEN_DIV));
-            advance(); break;
-          
-            case '%':
-            tokens.push_back(std::make_shared<Token>(TOKEN_MOD));
-            advance(); break;
-            
-            case '(':
-            tokens.push_back(std::make_shared<Token>(TOKEN_LEFT_PAREN));
-            advance(); break;
-            
-            case ')':
-            tokens.push_back(std::make_shared<Token>(TOKEN_RIGHT_PAREN));
+            case '+': case '-': case '*': case '/': case '%': case '(': case ')':
+            tokens.push_back(std::make_shared<Token>(TO_TOKEN_TYPE[current_char], pos));
             advance(); break;
 
             default:
@@ -202,7 +207,7 @@ TokenList Lexer::make_tokens() {
             std::string error_msg = "Illegal char \'";
             error_msg += current_char;
             error_msg += "\'. At " + pos.get_pos();
-            tokens.push_back(std::make_shared<ErrorToken>(TOKEN_ERROR, error_msg));
+            tokens.push_back(std::make_shared<ErrorToken>(TOKEN_ERROR, pos, error_msg));
             return tokens;
         }
     }
@@ -223,9 +228,9 @@ std::shared_ptr<Token> Lexer::make_number() {
     }
 
     if(dot_count == 0) 
-        return std::make_shared<TypedToken<int64_t>>(TOKEN_INT, std::stoll(number_str));
+        return std::make_shared<TypedToken<int64_t>>(TOKEN_INT, pos, std::stoll(number_str));
     else 
-        return std::make_shared<TypedToken<double>>(TOKEN_FLOAT, std::stod(number_str));
+        return std::make_shared<TypedToken<double>>(TOKEN_FLOAT, pos, std::stod(number_str));
 }
 
 /// --------------------
