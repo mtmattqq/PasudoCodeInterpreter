@@ -111,7 +111,11 @@ std::shared_ptr<Node> Parser::bin_op(std::function<std::shared_ptr<Node>()> func
 }
 
 std::shared_ptr<Node> Parser::parse() {
-    return expr();
+    std::shared_ptr<Node> ret = expr();
+    if(tok_index != tokens.size()) {
+        ret = std::make_shared<ErrorNode>(std::make_shared<ErrorToken>(TOKEN_ERROR, "Syntex Error"));
+    }
+    return ret;
 }
 
 /// --------------------
