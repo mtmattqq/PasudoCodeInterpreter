@@ -7,6 +7,14 @@ For DSA textbook
 ### Operators and Operations
 
 - `a <- 10` : move the value 10 to the variable `a`
+- `+-*/%` : `%` means mod.
+
+### Expression
+
+- `expr` : `term ((ADD|SUB) term)*`
+- `term` : `factor ((MUL|DIV|MOD) factor)*`
+- `factor`: `INT|FLOAT`
+
 
 ### Function
 
