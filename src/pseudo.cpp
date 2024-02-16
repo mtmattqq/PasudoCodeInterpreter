@@ -98,7 +98,7 @@ std::ostream& operator<<(std::ostream &out, Number &number) {
 template<typename T>
 std::string TypedNumber<T>::get_num() {
     std::stringstream ss;
-    ss << std::fixed << value;
+    ss << value;
     std::string ret;
     std::getline(ss, ret);
     return ret;
