@@ -7,7 +7,12 @@ Let's make the pseudo code a actual programming language.
 ### Operators and Operations
 
 - `a <- 10` : move the value 10 to the variable `a`
-- `+-*/%` : `%` means mod.
+- `+` : addition 
+- `-` : subtraction
+- `*` : multiplication
+- `/` : division
+- `%` : mod operation
+- `^` : power operation
 
 ### Expression
 

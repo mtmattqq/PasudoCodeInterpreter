@@ -34,6 +34,7 @@ const std::string TOKEN_SUB{"SUB"};
 const std::string TOKEN_MUL{"MUL"};
 const std::string TOKEN_DIV{"DIV"};
 const std::string TOKEN_MOD{"MOD"};
+const std::string TOKEN_POW{"POW"};
 const std::string TOKEN_LEFT_PAREN{"LPAREN"};
 const std::string TOKEN_RIGHT_PAREN{"RPAREN"};
 const std::string TOKEN_ERROR{"ERROR"};
@@ -44,6 +45,7 @@ public:
         : type(_type), pos(_pos) {}
     virtual std::string get_tok();
     virtual std::string get_type();
+    virtual std::string get_value() { return "";}
     virtual Position get_pos() { return pos;}
     virtual inline bool isnumber() { return false;}
     friend std::ostream& operator<<(std::ostream &out, Token &token);
@@ -58,6 +60,7 @@ public:
     TypedToken(const std::string& _type, const Position &_pos, const T &_value) 
         : Token(_type, _pos), value(_value) {}
     virtual std::string get_tok();
+    virtual std::string get_value();
     virtual inline bool isnumber() { return type == TOKEN_INT || type == TOKEN_FLOAT;}
 protected:
     T value;
@@ -74,19 +77,18 @@ std::ostream& operator<<(std::ostream &out, TokenList &tokens);
 const std::string NUMBER_NONE{"NONE"};
 const std::string NUMBER_INT{"Int"};
 const std::string NUMBER_FLOAT{"Float"};
+const std::string NUMBER_ERROR{"ERROR"};
 
 class Number {
 public:
-    Number(const std::string& _type = NUMBER_NONE, Position _pos = Position())
-        : type(_type), pos(_pos) {}
+    Number(const std::string& _type = NUMBER_NONE)
+        : type(_type) {}
     virtual std::string get_num() { return "";}
     virtual std::string get_type(){ return type;}
-    virtual Position get_pos() { return pos;}
-    virtual void get_value() {};
     friend std::ostream& operator<<(std::ostream &out, Number &token);
+    
 protected:
     std::string type;
-    Position pos;
 };
 
 using NumberList = std::vector<std::shared_ptr<Number>>;
@@ -94,13 +96,23 @@ using NumberList = std::vector<std::shared_ptr<Number>>;
 template<typename T>
 class TypedNumber: public Number {
 public:
-    TypedNumber(const std::string& _type, const Position &_pos, const T &_value) 
-        : Number(_type, _pos), value(_value) {}
+    TypedNumber(const std::string& _type, const T &_value) 
+        : Number(_type), value(_value) {}
     virtual std::string get_num();
-    virtual T get_value();
 protected:
     T value;
 };
+
+using ErrorNumber = TypedNumber<std::string>;
+
+std::shared_ptr<Number> operator+(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator-(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator*(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator/(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator%(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> pow(std::shared_ptr<Number>, std::shared_ptr<Number>);
+
+std::shared_ptr<Number> operator-(std::shared_ptr<Number>);
 
 /// --------------------
 /// Node
@@ -118,6 +130,7 @@ public:
     virtual ~Node() {};
     virtual std::vector<std::shared_ptr<Node>> get_child() { return std::vector<std::shared_ptr<Node>>(0);}
     virtual std::string get_type() {return "";}
+    virtual std::shared_ptr<Token> get_tok() = 0;
 };
 
 using NodeList = std::vector<std::shared_ptr<Node>>;
@@ -127,6 +140,7 @@ public:
     ErrorNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
     virtual std::string get_node();
+    virtual std::shared_ptr<Token> get_tok() { return tok;}
     virtual ~ErrorNode() {tok.reset();}
     virtual std::string get_type() {return NODE_ERROR;}
 protected:
@@ -140,6 +154,7 @@ public:
     virtual std::string get_node();
     virtual ~NumberNode() { tok.reset();}
     virtual std::string get_type() {return NODE_NUMBER;}
+    virtual std::shared_ptr<Token> get_tok() { return tok;}
 protected:
     std::shared_ptr<Token> tok;
 };
@@ -152,6 +167,7 @@ public:
     virtual ~BinOpNode();
     virtual NodeList get_child();
     virtual std::string get_type() {return NODE_BINOP;}
+    virtual std::shared_ptr<Token> get_tok() { return op_tok;}
 protected:
     std::shared_ptr<Node> left_node, right_node;
     std::shared_ptr<Token> op_tok;
@@ -165,6 +181,7 @@ public:
     virtual ~UnaryOpNode() { node.reset(); op_tok.reset();}
     virtual NodeList get_child();
     virtual std::string get_type() { return NODE_UNARYOP;}
+    virtual std::shared_ptr<Token> get_tok() { return op_tok;}
 protected:
     std::shared_ptr<Node> node;
     std::shared_ptr<Token> op_tok;
@@ -182,6 +199,7 @@ public:
     std::shared_ptr<Node> factor();
     std::shared_ptr<Node> term();
     std::shared_ptr<Node> expr();
+    std::shared_ptr<Node> pow(std::shared_ptr<Node>);
     std::shared_ptr<Node> bin_op(std::function<std::shared_ptr<Node>()>, std::vector<std::string>);
     std::shared_ptr<Node> parse();
 protected:
@@ -218,9 +236,11 @@ class Interpreter {
 public:
     Interpreter()
         {}
-    void visit(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit(std::shared_ptr<Node>);
+    std::shared_ptr<Number> bin_op(std::shared_ptr<Number>, std::shared_ptr<Number>, std::shared_ptr<Token>);
+    std::shared_ptr<Number> unary_op(std::shared_ptr<Number>, std::shared_ptr<Token>);
 protected:
-
+    ;
 };
 
 #endif
