@@ -1,6 +1,6 @@
 # PseudoCodeInterpreter
 
-For DSA textbook
+Let's make the pseudo code a actual programming language.
 
 ## Language
 
@@ -11,10 +11,12 @@ For DSA textbook
 
 ### Expression
 
-- `expr` : `term ((ADD|SUB) term)*`
-- `term` : `factor ((MUL|DIV|MOD) factor)*`
-- `factor`: `INT|FLOAT`
-
+- `expr : term ((ADD|SUB) term)*`
+- `term : factor ((MUL|DIV|MOD) factor)*`
+- `factor :`
+    - `INT|FLOAT`
+    - `(ADD|SUB) factor`
+    - `LEFT_PAREN expr RIGHT_PAREN`
 
 ### Function
 

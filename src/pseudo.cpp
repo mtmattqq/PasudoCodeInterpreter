@@ -76,6 +76,29 @@ std::ostream& operator<<(std::ostream &out, TokenList &tokens) {
 }
 
 /// --------------------
+/// Number
+/// --------------------
+
+std::ostream& operator<<(std::ostream &out, Number &number) {
+    out << number.get_num();
+    return out;
+}
+
+template<typename T>
+std::string TypedNumber<T>::get_num() {
+    std::stringstream ss;
+    ss << value;
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+template<typename T>
+T TypedNumber<T>::get_value() {
+    return value;
+}
+
+/// --------------------
 /// Node
 /// --------------------
 
@@ -95,10 +118,26 @@ std::string BinOpNode::get_node() {
     return ret;
 }
 
+NodeList BinOpNode::get_child() {
+    return NodeList{left_node, right_node};
+}
+
 BinOpNode::~BinOpNode() {
     left_node.reset();
     right_node.reset();
     op_tok.reset();
+}
+
+std::string UnaryOpNode::get_node() {
+    std::stringstream ss;
+    ss << "(" << op_tok->get_tok() << ", " << node->get_node() << ")";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+NodeList UnaryOpNode::get_child() {
+    return NodeList{node};
 }
 
 /// --------------------
@@ -116,13 +155,24 @@ std::shared_ptr<Token> Parser::advance() {
 
 std::shared_ptr<Node> Parser::factor() {
     std::shared_ptr<Token> tok = current_tok;
-    if(tok->isnumber()) {
+    std::string error_msg{"Not a factor: Expect an INT or a FLOAT, found \""};
+    if(tok->get_type() == TOKEN_ADD || tok->get_type() == TOKEN_SUB) {
+        advance();
+        return std::make_shared<UnaryOpNode>(factor(), tok);
+    } else if(tok->isnumber()) {
         advance();
         return std::make_shared<NumberNode>(tok);
+    } else if(tok->get_type() == TOKEN_LEFT_PAREN) {
+        advance();
+        std::shared_ptr<Node> e = expr();
+        if(current_tok->get_type() == TOKEN_RIGHT_PAREN) {
+            advance();
+            return e;
+        }
+        error_msg = "Not a factor: Expect \')\', found \"";
     }
-    std::string error_msg{"Not a factor: Expect an INT or a FLOAT, found \""};
-    error_msg += tok->get_tok() + "\"";
-    std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, tok->get_pos(), error_msg);
+    error_msg += current_tok->get_tok() + "\"";
+    std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
     return std::make_shared<ErrorNode>(error_token);
 }
 
@@ -234,15 +284,41 @@ std::shared_ptr<Token> Lexer::make_number() {
 }
 
 /// --------------------
+/// Interpreter
+/// --------------------
+
+void Interpreter::visit(std::shared_ptr<Node> node) {
+    if(node->get_type() == NODE_NUMBER) {
+        std::cerr << "Found a number" << "\n";
+    }
+    NodeList child = node->get_child();
+    if(node->get_type() == NODE_BINOP) {
+        std::cerr << "Found a BinOp" << "\n";
+    }
+    if(node->get_type() == NODE_UNARYOP) {
+        std::cerr << "Found a UnaryOp" << "\n";
+    }
+    for(auto c : child) {
+        visit(c);
+    }
+}
+
+/// --------------------
 /// Run
 /// --------------------
 
 std::string Run(std::string file_name, std::string text) {
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
-    std::cout << tokens << "\n";
+    if(tokens.empty()) return "";
+    std::cout << "Tokens: " << tokens << "\n";
+
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    std::cout << ast->get_node() << "\n";
+    std::cout << "Nodes: " << ast->get_node() << "\n";
+    if(ast->get_type() == NODE_ERROR) return "STOP";
+
+    Interpreter interpreter;
+    interpreter.visit(ast);
     return "";
 }

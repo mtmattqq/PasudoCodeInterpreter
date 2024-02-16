@@ -68,20 +68,59 @@ using ErrorToken = TypedToken<std::string>;
 std::ostream& operator<<(std::ostream &out, TokenList &tokens);
 
 /// --------------------
+/// Number
+/// --------------------
+
+const std::string NUMBER_NONE{"NONE"};
+const std::string NUMBER_INT{"Int"};
+const std::string NUMBER_FLOAT{"Float"};
+
+class Number {
+public:
+    Number(const std::string& _type = NUMBER_NONE, Position _pos = Position())
+        : type(_type), pos(_pos) {}
+    virtual std::string get_num() { return "";}
+    virtual std::string get_type(){ return type;}
+    virtual Position get_pos() { return pos;}
+    virtual void get_value() {};
+    friend std::ostream& operator<<(std::ostream &out, Number &token);
+protected:
+    std::string type;
+    Position pos;
+};
+
+using NumberList = std::vector<std::shared_ptr<Number>>;
+
+template<typename T>
+class TypedNumber: public Number {
+public:
+    TypedNumber(const std::string& _type, const Position &_pos, const T &_value) 
+        : Number(_type, _pos), value(_value) {}
+    virtual std::string get_num();
+    virtual T get_value();
+protected:
+    T value;
+};
+
+/// --------------------
 /// Node
 /// --------------------
 
 const std::string NODE_NUMBER{"NUMBER"};
 const std::string NODE_BINOP{"BINOP"};
 const std::string NODE_ERROR{"ERROR"};
+const std::string NODE_UNARYOP("UNARYOP");
 
 
 class Node {
 public:
     virtual std::string get_node() = 0;
     virtual ~Node() {};
+    virtual std::vector<std::shared_ptr<Node>> get_child() { return std::vector<std::shared_ptr<Node>>(0);}
     virtual std::string get_type() {return "";}
 };
+
+using NodeList = std::vector<std::shared_ptr<Node>>;
 
 class ErrorNode: public Node {
 public:
@@ -99,7 +138,7 @@ public:
     NumberNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
     virtual std::string get_node();
-    virtual ~NumberNode() {tok.reset();}
+    virtual ~NumberNode() { tok.reset();}
     virtual std::string get_type() {return NODE_NUMBER;}
 protected:
     std::shared_ptr<Token> tok;
@@ -111,9 +150,23 @@ public:
         : left_node(left), right_node(right), op_tok(tok) {}
     virtual std::string get_node();
     virtual ~BinOpNode();
+    virtual NodeList get_child();
     virtual std::string get_type() {return NODE_BINOP;}
 protected:
     std::shared_ptr<Node> left_node, right_node;
+    std::shared_ptr<Token> op_tok;
+};
+
+class UnaryOpNode: public Node {
+public:
+    UnaryOpNode(std::shared_ptr<Node> _node, std::shared_ptr<Token> tok)
+        : node(_node), op_tok(tok) {}
+    virtual std::string get_node();
+    virtual ~UnaryOpNode() { node.reset(); op_tok.reset();}
+    virtual NodeList get_child();
+    virtual std::string get_type() { return NODE_UNARYOP;}
+protected:
+    std::shared_ptr<Node> node;
     std::shared_ptr<Token> op_tok;
 };
 
@@ -157,5 +210,17 @@ protected:
 
 std::string Run(std::string, std::string);
 
+/// --------------------
+/// Interpreter
+/// --------------------
+
+class Interpreter {
+public:
+    Interpreter()
+        {}
+    void visit(std::shared_ptr<Node>);
+protected:
+
+};
 
 #endif
