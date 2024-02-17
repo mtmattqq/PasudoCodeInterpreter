@@ -6,7 +6,7 @@ Let's make the pseudo code a actual programming language.
 
 ### Operators and Operations
 
-- `a <- 10` : move the value 10 to the variable `a`
+- `var a <- 10` : move the value 10 to the variable `a`
 - `+` : addition 
 - `-` : subtraction
 - `*` : multiplication
@@ -16,12 +16,18 @@ Let's make the pseudo code a actual programming language.
 
 ### Expression
 
-- `expr : term ((ADD|SUB) term)*`
+- `expr :`
+    - `KEYWORD:var IDENTIFIER ASSIGN expr`
+    - `term ((ADD|SUB) term)*`
 - `term : factor ((MUL|DIV|MOD) factor)*`
 - `factor :`
-    - `INT|FLOAT`
     - `(ADD|SUB) factor`
+- `power :`
+    - atom (POW factor)*
+- `atom :`
+    - `INT|FLOAT|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
+
 
 ### Function
 

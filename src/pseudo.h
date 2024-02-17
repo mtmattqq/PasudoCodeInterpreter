@@ -6,6 +6,7 @@
 #include <memory>
 #include <functional>
 #include <map>
+#include <set>
 
 #define NONE 0
 
@@ -26,6 +27,10 @@ struct Position {
 /// --------------------
 /// Token
 /// --------------------
+
+const std::string TOKEN_KEYWORD{"KEYWORD"};
+const std::string TOKEN_IDENTIFIER{"IDENTIFIER"};
+const std::string TOKEN_ASSIGN{"ASSIGN"};
 
 const std::string TOKEN_INT{"INT"};
 const std::string TOKEN_FLOAT{"FLOAT"};
@@ -122,7 +127,8 @@ const std::string NODE_NUMBER{"NUMBER"};
 const std::string NODE_BINOP{"BINOP"};
 const std::string NODE_ERROR{"ERROR"};
 const std::string NODE_UNARYOP("UNARYOP");
-
+const std::string NODE_VARASSIGN("VARASSIGN");
+const std::string NODE_VARACCESS("VARACCESS");
 
 class Node {
 public:
@@ -131,6 +137,7 @@ public:
     virtual std::vector<std::shared_ptr<Node>> get_child() { return std::vector<std::shared_ptr<Node>>(0);}
     virtual std::string get_type() {return "";}
     virtual std::shared_ptr<Token> get_tok() = 0;
+    virtual std::string get_name() {return "";}
 };
 
 using NodeList = std::vector<std::shared_ptr<Node>>;
@@ -187,6 +194,35 @@ protected:
     std::shared_ptr<Token> op_tok;
 };
 
+class VarAssignNode: public Node {
+public:
+    VarAssignNode(std::string _name, std::shared_ptr<Node> _node)
+        : name(_name), node(_node) {}
+    virtual std::string get_node();
+    virtual ~VarAssignNode() { node.reset();}
+    virtual NodeList get_child() { return NodeList{node};}
+    virtual std::string get_type() { return NODE_VARASSIGN;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() {return name;}
+protected:
+    std::string name;
+    std::shared_ptr<Node> node;
+};
+
+class VarAccessNode: public Node {
+public:
+    VarAccessNode(std::shared_ptr<Token> _tok)
+        : tok(_tok) {}
+    virtual std::string get_node();
+    virtual ~VarAccessNode() { tok.reset();}
+    virtual NodeList get_child() { return NodeList(0);}
+    virtual std::string get_type() { return NODE_VARACCESS;}
+    virtual std::shared_ptr<Token> get_tok() { return tok;}
+    virtual std::string get_name() {return tok->get_value();}
+protected:
+    std::shared_ptr<Token> tok;
+};
+
 /// --------------------
 /// Parser
 /// --------------------
@@ -199,8 +235,11 @@ public:
     std::shared_ptr<Node> factor();
     std::shared_ptr<Node> term();
     std::shared_ptr<Node> expr();
-    std::shared_ptr<Node> pow(std::shared_ptr<Node>);
-    std::shared_ptr<Node> bin_op(std::function<std::shared_ptr<Node>()>, std::vector<std::string>);
+    std::shared_ptr<Node> pow();
+    std::shared_ptr<Node> atom();
+    std::shared_ptr<Node> bin_op(
+        std::function<std::shared_ptr<Node>()>, 
+        std::vector<std::string>, std::function<std::shared_ptr<Node>()>);
     std::shared_ptr<Node> parse();
 protected:
     TokenList tokens;
@@ -212,6 +251,13 @@ protected:
 /// Lexer
 /// --------------------
 
+const std::set<std::string> KEYWORDS{
+    "var", 
+    "for", "while", "do",
+    "if", "then", 
+    "Algotithm"
+};
+
 class Lexer {
 public:
     Lexer(const std::string& _file_name, const std::string& _text)
@@ -220,13 +266,28 @@ public:
     void advance();
     TokenList make_tokens();
     std::shared_ptr<Token> make_number();
+    std::shared_ptr<Token> make_identifier();
 protected:
     std::string file_name, text;
     Position pos;
     char current_char;
 };
 
-std::string Run(std::string, std::string);
+/// --------------------
+/// SymbolTable
+/// --------------------
+
+class SymbolTable {
+public:
+    SymbolTable()
+        : parent(nullptr) {}
+    std::shared_ptr<Number> get(std::string);
+    void set(std::string, std::shared_ptr<Number>);
+    void erase(std::string);
+protected:
+    std::map<std::string, std::shared_ptr<Number>> symbols;
+    std::shared_ptr<SymbolTable> parent;
+};
 
 /// --------------------
 /// Interpreter
@@ -234,13 +295,18 @@ std::string Run(std::string, std::string);
 
 class Interpreter {
 public:
-    Interpreter()
-        {}
+    Interpreter(SymbolTable &symbols)
+        : symbol_table(symbols) {}
     std::shared_ptr<Number> visit(std::shared_ptr<Node>);
     std::shared_ptr<Number> bin_op(std::shared_ptr<Number>, std::shared_ptr<Number>, std::shared_ptr<Token>);
     std::shared_ptr<Number> unary_op(std::shared_ptr<Number>, std::shared_ptr<Token>);
 protected:
-    ;
+    SymbolTable &symbol_table;
 };
 
+/// --------------------
+/// Run
+/// --------------------
+
+std::string Run(std::string, std::string, SymbolTable&);
 #endif
