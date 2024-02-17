@@ -9,7 +9,7 @@ void RunShell(std::string file_name) {
         std::cout << Color(0x34, 0xD3, 0xDE) << "Pseudo >> " RESET;
         std::string input;
         std::getline(std::cin, input);
-        Run(file_name, input, global_symbol_table);
+        std::cout << Run(file_name, input, global_symbol_table) << "\n";
     }
 }
 

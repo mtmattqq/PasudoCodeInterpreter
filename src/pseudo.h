@@ -34,6 +34,7 @@ const std::string TOKEN_ASSIGN{"ASSIGN"};
 
 const std::string TOKEN_INT{"INT"};
 const std::string TOKEN_FLOAT{"FLOAT"};
+// Arithmic
 const std::string TOKEN_ADD{"ADD"};
 const std::string TOKEN_SUB{"SUB"};
 const std::string TOKEN_MUL{"MUL"};
@@ -42,6 +43,14 @@ const std::string TOKEN_MOD{"MOD"};
 const std::string TOKEN_POW{"POW"};
 const std::string TOKEN_LEFT_PAREN{"LPAREN"};
 const std::string TOKEN_RIGHT_PAREN{"RPAREN"};
+// Comparison
+const std::string TOKEN_EQUAL{"EQUAL"};
+const std::string TOKEN_NEQ{"NEQ"};
+const std::string TOKEN_LESS{"LESS"};
+const std::string TOKEN_GREATER{"GREATER"};
+const std::string TOKEN_LEQ{"LEQ"};
+const std::string TOKEN_GEQ{"GEQ"};
+
 const std::string TOKEN_ERROR{"ERROR"};
 
 class Token {
@@ -117,7 +126,18 @@ std::shared_ptr<Number> operator/(std::shared_ptr<Number>, std::shared_ptr<Numbe
 std::shared_ptr<Number> operator%(std::shared_ptr<Number>, std::shared_ptr<Number>);
 std::shared_ptr<Number> pow(std::shared_ptr<Number>, std::shared_ptr<Number>);
 
+std::shared_ptr<Number> operator==(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator!=(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator<(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator>(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator<=(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator>=(std::shared_ptr<Number>, std::shared_ptr<Number>);
+
+std::shared_ptr<Number> operator&&(std::shared_ptr<Number>, std::shared_ptr<Number>);
+std::shared_ptr<Number> operator||(std::shared_ptr<Number>, std::shared_ptr<Number>);
+
 std::shared_ptr<Number> operator-(std::shared_ptr<Number>);
+std::shared_ptr<Number> operator!(std::shared_ptr<Number>);
 
 /// --------------------
 /// Node
@@ -129,6 +149,7 @@ const std::string NODE_ERROR{"ERROR"};
 const std::string NODE_UNARYOP("UNARYOP");
 const std::string NODE_VARASSIGN("VARASSIGN");
 const std::string NODE_VARACCESS("VARACCESS");
+const std::string NODE_IF("IF");
 
 class Node {
 public:
@@ -146,9 +167,9 @@ class ErrorNode: public Node {
 public:
     ErrorNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
+    // virtual ~ErrorNode() {}
     virtual std::string get_node();
     virtual std::shared_ptr<Token> get_tok() { return tok;}
-    virtual ~ErrorNode() {tok.reset();}
     virtual std::string get_type() {return NODE_ERROR;}
 protected:
     std::shared_ptr<Token> tok;
@@ -158,8 +179,8 @@ class NumberNode: public Node {
 public:
     NumberNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
+    // virtual ~NumberNode() {}
     virtual std::string get_node();
-    virtual ~NumberNode() { tok.reset();}
     virtual std::string get_type() {return NODE_NUMBER;}
     virtual std::shared_ptr<Token> get_tok() { return tok;}
 protected:
@@ -170,8 +191,8 @@ class BinOpNode: public Node {
 public:
     BinOpNode(std::shared_ptr<Node> left, std::shared_ptr<Node> right, std::shared_ptr<Token> tok)
         : left_node(left), right_node(right), op_tok(tok) {}
+    // virtual ~BinOpNode() {}
     virtual std::string get_node();
-    virtual ~BinOpNode();
     virtual NodeList get_child();
     virtual std::string get_type() {return NODE_BINOP;}
     virtual std::shared_ptr<Token> get_tok() { return op_tok;}
@@ -184,8 +205,8 @@ class UnaryOpNode: public Node {
 public:
     UnaryOpNode(std::shared_ptr<Node> _node, std::shared_ptr<Token> tok)
         : node(_node), op_tok(tok) {}
+    // virtual ~UnaryOpNode() {}
     virtual std::string get_node();
-    virtual ~UnaryOpNode() { node.reset(); op_tok.reset();}
     virtual NodeList get_child();
     virtual std::string get_type() { return NODE_UNARYOP;}
     virtual std::shared_ptr<Token> get_tok() { return op_tok;}
@@ -198,8 +219,8 @@ class VarAssignNode: public Node {
 public:
     VarAssignNode(std::string _name, std::shared_ptr<Node> _node)
         : name(_name), node(_node) {}
+    // virtual ~VarAssignNode() {}
     virtual std::string get_node();
-    virtual ~VarAssignNode() { node.reset();}
     virtual NodeList get_child() { return NodeList{node};}
     virtual std::string get_type() { return NODE_VARASSIGN;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
@@ -213,14 +234,28 @@ class VarAccessNode: public Node {
 public:
     VarAccessNode(std::shared_ptr<Token> _tok)
         : tok(_tok) {}
+    // virtual ~VarAccessNode() {}
     virtual std::string get_node();
-    virtual ~VarAccessNode() { tok.reset();}
     virtual NodeList get_child() { return NodeList(0);}
     virtual std::string get_type() { return NODE_VARACCESS;}
     virtual std::shared_ptr<Token> get_tok() { return tok;}
     virtual std::string get_name() {return tok->get_value();}
 protected:
     std::shared_ptr<Token> tok;
+};
+
+class IfNode: public Node {
+public:
+    IfNode(std::shared_ptr<Node> condition, std::shared_ptr<Node> expr, std::shared_ptr<Node> _else_node)
+        : condition_node(condition), expr_node(expr), else_node(_else_node) {}
+    // virtual ~IfNode() {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{condition_node, expr_node, else_node};}
+    virtual std::string get_type() { return NODE_IF;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() { return "";}
+protected:
+    std::shared_ptr<Node> condition_node, expr_node, else_node;
 };
 
 /// --------------------
@@ -235,6 +270,9 @@ public:
     std::shared_ptr<Node> factor();
     std::shared_ptr<Node> term();
     std::shared_ptr<Node> expr();
+    std::shared_ptr<Node> arith_expr();
+    std::shared_ptr<Node> comp_expr();
+    std::shared_ptr<Node> if_expr();
     std::shared_ptr<Node> pow();
     std::shared_ptr<Node> atom();
     std::shared_ptr<Node> bin_op(
@@ -253,8 +291,9 @@ protected:
 
 const std::set<std::string> KEYWORDS{
     "var", 
+    "and", "or", "not",
     "for", "while", "do",
-    "if", "then", 
+    "if", "then", "else", 
     "Algotithm"
 };
 
@@ -298,6 +337,13 @@ public:
     Interpreter(SymbolTable &symbols)
         : symbol_table(symbols) {}
     std::shared_ptr<Number> visit(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_number(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_var_access(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_var_assign(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_bin_op(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_unary_op(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_if(std::shared_ptr<Node>);
+
     std::shared_ptr<Number> bin_op(std::shared_ptr<Number>, std::shared_ptr<Number>, std::shared_ptr<Token>);
     std::shared_ptr<Number> unary_op(std::shared_ptr<Number>, std::shared_ptr<Token>);
 protected:
