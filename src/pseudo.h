@@ -150,6 +150,9 @@ const std::string NODE_UNARYOP("UNARYOP");
 const std::string NODE_VARASSIGN("VARASSIGN");
 const std::string NODE_VARACCESS("VARACCESS");
 const std::string NODE_IF("IF");
+const std::string NODE_FOR("FOR");
+const std::string NODE_WHILE("WHILE");
+const std::string NODE_REPEAT("REPEAT");
 
 class Node {
 public:
@@ -258,6 +261,47 @@ protected:
     std::shared_ptr<Node> condition_node, expr_node, else_node;
 };
 
+class ForNode: public Node {
+public:
+    ForNode(
+        std::shared_ptr<Node> _var_assign, std::shared_ptr<Node> _end_value,
+        std::shared_ptr<Node> _step_value, std::shared_ptr<Node> _body_node
+    )   : var_assign(_var_assign), end_value(_end_value), step_value(_step_value), body_node(_body_node) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{var_assign, end_value, step_value, body_node};}
+    virtual std::string get_type() { return NODE_FOR;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() { return "";}
+protected:
+    std::shared_ptr<Node> var_assign, end_value, step_value, body_node;
+};
+
+class WhileNode: public Node {
+public:
+    WhileNode(std::shared_ptr<Node> _condition, std::shared_ptr<Node> _body_node)
+        : condition(_condition), body_node(_body_node) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{condition, body_node};}
+    virtual std::string get_type() { return NODE_WHILE;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() { return "";}
+protected:
+    std::shared_ptr<Node> condition, body_node;
+};
+
+class RepeatNode: public Node {
+public:
+    RepeatNode( std::shared_ptr<Node> _body_node, std::shared_ptr<Node> _condition)
+        : condition(_condition), body_node(_body_node) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{body_node,condition};}
+    virtual std::string get_type() { return NODE_REPEAT;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() { return "";}
+protected:
+    std::shared_ptr<Node> condition, body_node;
+};
+
 /// --------------------
 /// Parser
 /// --------------------
@@ -273,6 +317,10 @@ public:
     std::shared_ptr<Node> arith_expr();
     std::shared_ptr<Node> comp_expr();
     std::shared_ptr<Node> if_expr();
+    std::shared_ptr<Node> for_expr();
+    std::shared_ptr<Node> while_expr();
+    std::shared_ptr<Node> repeat_expr();
+
     std::shared_ptr<Node> pow();
     std::shared_ptr<Node> atom();
     std::shared_ptr<Node> bin_op(
@@ -292,7 +340,8 @@ protected:
 const std::set<std::string> KEYWORDS{
     "var", 
     "and", "or", "not",
-    "for", "while", "do",
+    "for", "to", "step", "while", "do",
+    "repeat", "until",
     "if", "then", "else", 
     "Algotithm"
 };
@@ -343,6 +392,9 @@ public:
     std::shared_ptr<Number> visit_bin_op(std::shared_ptr<Node>);
     std::shared_ptr<Number> visit_unary_op(std::shared_ptr<Node>);
     std::shared_ptr<Number> visit_if(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_for(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_while(std::shared_ptr<Node>);
+    std::shared_ptr<Number> visit_repeat(std::shared_ptr<Node>);
 
     std::shared_ptr<Number> bin_op(std::shared_ptr<Number>, std::shared_ptr<Number>, std::shared_ptr<Token>);
     std::shared_ptr<Number> unary_op(std::shared_ptr<Number>, std::shared_ptr<Token>);

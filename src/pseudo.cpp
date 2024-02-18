@@ -306,6 +306,34 @@ std::string IfNode::get_node() {
     return ret;
 }
 
+std::string ForNode::get_node() {
+    std::stringstream ss;
+    ss << "(FOR " << var_assign->get_node() << " TO " << end_value->get_node();
+    if(step_value != nullptr)
+        ss << " STEP " << step_value->get_node();
+    ss << " DO " << body_node->get_node();
+    ss << ")";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+std::string WhileNode::get_node() {
+    std::stringstream ss;
+    ss << "(WHILE " << condition->get_node() << " DO " << body_node->get_node() << ")";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+std::string RepeatNode::get_node() {
+    std::stringstream ss;
+    ss << "(REPEAT " << body_node->get_node() << " UNTIL " << condition->get_node() << ")";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
 /// --------------------
 /// Parser
 /// --------------------
@@ -338,6 +366,15 @@ std::shared_ptr<Node> Parser::atom() {
     } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "if") {
         advance();
         return if_expr();
+    } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "for") {
+        advance();
+        return for_expr();
+    } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "while") {
+        advance();
+        return while_expr();
+    } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "repeat") {
+        advance();
+        return repeat_expr();
     }
     error_msg += current_tok->get_tok() + "\"\n";
     std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
@@ -397,7 +434,8 @@ std::shared_ptr<Node> Parser::arith_expr() {
 }
 
 std::shared_ptr<Node> Parser::if_expr() {
-    std::shared_ptr<Node> condtion = expr();
+    std::shared_ptr<Node> condition = expr();
+    if(condition->get_type() == NODE_ERROR) return condition;
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "then")) {
         std::string error_msg = "Expected \"then\"\n";
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
@@ -405,6 +443,7 @@ std::shared_ptr<Node> Parser::if_expr() {
     }
     advance();
     std::shared_ptr<Node> exp = expr();
+    if(exp->get_type() == NODE_ERROR) return exp;
     std::shared_ptr<Node> els = nullptr;
     if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "else") {
         advance();
@@ -415,7 +454,79 @@ std::shared_ptr<Node> Parser::if_expr() {
             els = expr();
         }
     }
-    return std::make_shared<IfNode>(condtion, exp, els);
+    return std::make_shared<IfNode>(condition, exp, els);
+}
+
+std::shared_ptr<Node> Parser::for_expr() {
+    std::shared_ptr<Token> var_name = current_tok;
+    if(current_tok->get_type() != TOKEN_IDENTIFIER) {
+        std::string error_msg = "Expected \"an identifier\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    if(current_tok->get_type() != TOKEN_ASSIGN) {
+        std::string error_msg = "Expected \"<-\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    std::shared_ptr<Node> start_value = expr();
+    if(start_value->get_type() == NODE_ERROR) return start_value;
+    std::shared_ptr<Node> var_assign = std::make_shared<VarAssignNode>(var_name->get_value(), start_value);
+    
+    if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "to")) {
+        std::string error_msg = "Expected \"to\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    std::shared_ptr<Node> end_value = expr();
+    if(end_value->get_type() == NODE_ERROR) return end_value;
+
+    std::shared_ptr<Node> step_value = nullptr;
+    if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "step") {
+        advance();
+        step_value = expr();
+        if(step_value->get_type() == NODE_ERROR) return step_value;
+    }
+    if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "do")) {
+        std::string error_msg = "Expected \"do\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    std::shared_ptr<Node> body_node = expr();
+    if(body_node->get_type() == NODE_ERROR) return body_node;
+    return std::make_shared<ForNode>(var_assign, end_value, step_value, body_node);
+}
+
+std::shared_ptr<Node> Parser::while_expr() {
+    std::shared_ptr<Node> condition = expr();
+    if(condition->get_type() == NODE_ERROR) return condition;
+    if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "do")) {
+        std::string error_msg = "Expected \"do\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    std::shared_ptr<Node> body_node = expr();
+    if(body_node->get_type() == NODE_ERROR) return body_node;
+    return std::make_shared<WhileNode>(condition, body_node);
+}
+
+std::shared_ptr<Node> Parser::repeat_expr() {
+    std::shared_ptr<Node> body_node = expr();
+    if(body_node->get_type() == NODE_ERROR) return body_node;
+    if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "until")) {
+        std::string error_msg = "Expected \"until\"\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    advance();
+    std::shared_ptr<Node> condition = expr();
+    if(condition->get_type() == NODE_ERROR) return condition;
+    return std::make_shared<RepeatNode>(body_node, condition);
 }
 
 std::shared_ptr<Node> Parser::pow() {
@@ -449,16 +560,6 @@ std::shared_ptr<Node> Parser::parse() {
     if(ret->get_type() == NODE_ERROR) {
         return ret;
     }
-    // if(tok_index != tokens.size()) {
-    //     std::string error_msg = "Syntex Error: Found resundant tokens: ";
-    //     Position pos = tokens[tok_index]->get_pos();
-    //     while(tok_index != tokens.size())
-    //         error_msg += tokens[tok_index++]->get_tok();
-    //         if(tok_index != tokens.size())
-    //             error_msg += ", ";
-    //     error_msg += "\n";
-    //     return std::make_shared<ErrorNode>(std::make_shared<ErrorToken>(TOKEN_ERROR, pos, error_msg));
-    // }
     return ret;
 }
 
@@ -620,6 +721,15 @@ std::shared_ptr<Number> Interpreter::visit(std::shared_ptr<Node> node) {
     if(node->get_type() == NODE_IF) {
         return visit_if(node);
     }
+    if(node->get_type() == NODE_FOR) {
+        return visit_for(node);
+    }
+    if(node->get_type() == NODE_WHILE) {
+        return visit_while(node);
+    }
+    if(node->get_type() == NODE_REPEAT) {
+        return visit_repeat(node);
+    }
     return std::make_shared<ErrorNumber>(NUMBER_ERROR, "Fail to get result\n");
 }
 
@@ -678,6 +788,59 @@ std::shared_ptr<Number> Interpreter::visit_if(std::shared_ptr<Node> node) {
     return std::make_shared<TypedNumber<int64_t>>(NUMBER_INT, 0);
 }
 
+std::shared_ptr<Number> Interpreter::visit_for(std::shared_ptr<Node> node) {
+    NodeList child = node->get_child();
+    std::shared_ptr<Number> i = visit(child[0]);
+    std::shared_ptr<Number> step;
+    if(child[2] != nullptr) {
+        step = visit(child[2]);
+    } else {
+        step = std::make_shared<TypedNumber<int64_t>>(NUMBER_INT, 1);
+    }
+    std::shared_ptr<Number> end_value = visit(child[1]);
+    std::function<bool(std::shared_ptr<Number>, std::shared_ptr<Number>)> condition;
+    if(stod(step->get_num()) > 0) {
+        condition = [](std::shared_ptr<Number> i, std::shared_ptr<Number> end) -> bool {
+            return std::stoll((i <= end)->get_num()) == 1;
+        };
+    } else if(std::stod(step->get_num()) < 0) {
+        condition = [](std::shared_ptr<Number> i, std::shared_ptr<Number> end) -> bool {
+            return std::stoll((i >= end)->get_num()) == 1;
+        };
+    } else {
+        return std::make_shared<ErrorNumber>(NUMBER_ERROR, "Infinite for loop\n");
+    }
+
+    while(condition(i, end_value)) {
+        std::shared_ptr<Number> ret = visit(child[3]);
+        if(ret->get_type() == NUMBER_ERROR) 
+            return ret;
+        symbol_table.set(child[0]->get_name(), i + step);
+        i = symbol_table.get(child[0]->get_name());
+    }
+    return std::make_shared<TypedNumber<int64_t>>(NUMBER_INT, 0);
+}
+
+std::shared_ptr<Number> Interpreter::visit_while(std::shared_ptr<Node> node) {
+    NodeList child = node->get_child();
+    while(std::stoll(visit(child[0])->get_num()) == 1) {
+        std::shared_ptr<Number> ret = visit(child[1]);
+        if(ret->get_type() == NUMBER_ERROR) 
+            return ret;
+    }
+    return std::make_shared<TypedNumber<int64_t>>(NUMBER_INT, 0);
+}
+
+std::shared_ptr<Number> Interpreter::visit_repeat(std::shared_ptr<Node> node) {
+    NodeList child = node->get_child();
+    do {
+        std::shared_ptr<Number> ret = visit(child[0]);
+        if(ret->get_type() == NUMBER_ERROR) 
+            return ret;
+    } while(std::stoll(visit(child[1])->get_num()) == 0);
+    return std::make_shared<TypedNumber<int64_t>>(NUMBER_INT, 0);
+}
+
 std::shared_ptr<Number> Interpreter::bin_op(
     std::shared_ptr<Number> a, std::shared_ptr<Number> b, std::shared_ptr<Token> op
 ) {
@@ -731,11 +894,13 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    std::cout << "Tokens: " << tokens << "\n";
+    if(tokens[0]->get_type() == TOKEN_ERROR)
+        std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    std::cout << "Nodes: " << ast->get_node() << "\n";
+    if(ast->get_type() == NODE_ERROR)
+        std::cout << "Nodes: " << ast->get_node() << "\n";
     if(ast->get_type() == NODE_ERROR) return "STOP";
 
     Interpreter interpreter(global_symbol_table);

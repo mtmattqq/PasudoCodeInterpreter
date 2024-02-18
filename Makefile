@@ -19,6 +19,7 @@ clean :
 run :
 	make
 	make clean
+	clear
 	./shell
 
 test : test/test_inheritance.cpp

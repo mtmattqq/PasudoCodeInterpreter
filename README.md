@@ -33,8 +33,19 @@ Let's make the pseudo code a actual programming language.
 - `atom :`
     - `INT|FLOAT|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
+    - `if-expr`
+    - `for-expr`
+    - `while-expr`
+    - `repeat-expr`
 - `if-expr :`
     - `if expr then expr (else (if-expr|expr))?`
+- `for-expr :`
+    - `for IDENTIFIER ASSIGN expr to expr (step)? expr do expr`    
+- `while-expr :`
+    - `while expr do expr`
+- `repeat-expr :`
+    - `repeat expr until expr`
+
 
 ### if statement
 
@@ -49,6 +60,23 @@ else if a < 20 then
 else
     var a <- 8
 ```
+
+### for statement
+
+- `for var_name <- start_value to end_value do expr`
+
+```pseudo
+for i <- 1 to 10 do 
+    var i <- i + 1
+```
+
+### while statement
+
+- `while condition do expr`
+
+### repeat statement
+
+- `repeat expr until condition`
 
 ### Function
 
