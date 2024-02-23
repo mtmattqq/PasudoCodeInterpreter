@@ -29,7 +29,9 @@ Let's make the pseudo code a actual programming language.
 - `factor :`
     - `(ADD|SUB) factor`
 - `power :`
-    - `atom (POW factor)*`
+    - `call (POW factor)*`
+- `call :`
+    - atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?
 - `atom :`
     - `INT|FLOAT|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
@@ -37,6 +39,7 @@ Let's make the pseudo code a actual programming language.
     - `for-expr`
     - `while-expr`
     - `repeat-expr`
+    - `algo-def`
 - `if-expr :`
     - `if expr then expr (else (if-expr|expr))?`
 - `for-expr :`
@@ -45,6 +48,8 @@ Let's make the pseudo code a actual programming language.
     - `while expr do expr`
 - `repeat-expr :`
     - `repeat expr until expr`
+- `algo-def`
+    - `Algorithm IDENTIFIER? LEFT_PAREN (IDENTIFIER (COMMA IDENTIFIER)*)?  RIGHT_PAREN COLON expr`
 
 
 ### if statement
@@ -68,15 +73,27 @@ else
 ```pseudo
 for i <- 1 to 10 do 
     var i <- i + 1
+for i <- 1 to 100 step 10 do
+    var i <- i + 1
 ```
 
 ### while statement
 
 - `while condition do expr`
 
+```pseudo
+while i < 100 and i > 10
+    var i <- i * 2
+    var i <- i * 3 - 1
+```
+
 ### repeat statement
 
 - `repeat expr until condition`
+
+```pseudo
+repeat var i < i *2 until i > 1000
+```
 
 ### Function
 

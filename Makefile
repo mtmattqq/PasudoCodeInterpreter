@@ -18,7 +18,6 @@ clean :
 
 run :
 	make
-	make clean
 	clear
 	./shell
 
