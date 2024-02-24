@@ -115,8 +115,16 @@ std::shared_ptr<Value> AlgoValue::execute(NodeList args) {
 
     TokenList args_name = value->get_toks();
     for(int i = 0; i < args.size(); ++i) {
-
+        std::shared_ptr<Value> v = interpreter.visit(args[i]);
+        sym.set(args_name[i]->get_value(), v);
     }
+
+    NodeList algo_body = value->get_child();
+    std::shared_ptr<Value> ret;
+    for(int i = 0; i < algo_body.size(); ++i) {
+        ret = interpreter.visit(algo_body[i]);
+    }
+    return ret;
 }
 
 
@@ -351,7 +359,7 @@ std::string RepeatNode::get_node() {
 
 std::string AlgorithmDefNode::get_node() {
     std::stringstream ss;
-    ss << "(ALGORITHM " << algo_name->get_tok() << "(";
+    ss << "ALGORITHM " << algo_name->get_tok() << "(";
     if(!args_name.empty()) {
         ss << args_name[0]->get_tok();
     }
@@ -365,6 +373,7 @@ std::string AlgorithmDefNode::get_node() {
     std::string ret, line;
     while(std::getline(ss, line)) {
         ret += line;
+        ret += "\n";
     }
     return ret;
 }
@@ -376,9 +385,9 @@ std::string AlgorithmCallNode::get_node() {
         ss << args[0]->get_node();
     }
     for(int i{1}; i < args.size(); ++i) {
-        ss << ", " << args[i]->get_name();
+        ss << ", " << args[i]->get_node();
     }
-    ss << ")";
+    ss << "))";
     std::string ret;
     std::getline(ss, ret);
     return ret;
@@ -853,6 +862,12 @@ std::shared_ptr<Value> Interpreter::visit(std::shared_ptr<Node> node) {
     if(node->get_type() == NODE_REPEAT) {
         return visit_repeat(node);
     }
+    if(node->get_type() == NODE_ALGODEF) {
+        return visit_algo_def(node);
+    }
+    if(node->get_type() == NODE_ALGOCALL) {
+        return visit_algo_call(node);
+    }
     return std::make_shared<ErrorValue>(VALUE_ERROR, "Fail to get result\n");
 }
 
@@ -964,6 +979,20 @@ std::shared_ptr<Value> Interpreter::visit_repeat(std::shared_ptr<Node> node) {
     return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
 }
 
+std::shared_ptr<Value> Interpreter::visit_algo_def(std::shared_ptr<Node> node) {
+    std::string algo_name = node->get_name();
+    std::shared_ptr<Value> value = std::make_shared<AlgoValue>(algo_name, node);
+    symbol_table.set(algo_name, value);
+    return symbol_table.get(algo_name);
+}
+
+std::shared_ptr<Value> Interpreter::visit_algo_call(std::shared_ptr<Node> node) {
+    NodeList child = node->get_child();
+    std::string algo_name = node->get_name();
+    std::shared_ptr<Value> algo = symbol_table.get(algo_name);
+    return algo->execute(child);
+}
+
 std::shared_ptr<Value> Interpreter::bin_op(
     std::shared_ptr<Value> a, std::shared_ptr<Value> b, std::shared_ptr<Token> op
 ) {
@@ -1017,18 +1046,18 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    if(tokens[0]->get_type() == TOKEN_ERROR)
+    // if(tokens[0]->get_type() == TOKEN_ERROR)
         std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    if(ast->get_type() == NODE_ERROR)
+    // if(ast->get_type() == NODE_ERROR)
         std::cout << "Nodes: " << ast->get_node() << "\n";
-    if(ast->get_type() == NODE_ERROR) return "STOP";
+    if(ast->get_type() == NODE_ERROR) return "ABORT";
 
     Interpreter interpreter(global_symbol_table);
     std::shared_ptr<Value> ret = interpreter.visit(ast);
     std::cout << "Result: " << ret->get_num() << "\n";
-    if(ret->get_type() == VALUE_ERROR) return "STOP";
+    if(ret->get_type() == VALUE_ERROR) return "ABORT";
     return "";
 }

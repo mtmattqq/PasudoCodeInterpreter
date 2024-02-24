@@ -103,6 +103,8 @@ const std::string NODE_IF("IF");
 const std::string NODE_FOR("FOR");
 const std::string NODE_WHILE("WHILE");
 const std::string NODE_REPEAT("REPEAT");
+const std::string NODE_ALGODEF("ALGO");
+const std::string NODE_ALGOCALL("CALL");
 const std::string TAB{"    "};
 
 class Node {
@@ -260,7 +262,7 @@ public:
         : algo_name(_algo_name), args_name(_args_name), body_node(_body_node) {}
     virtual std::string get_node();
     virtual NodeList get_child() { return body_node;}
-    virtual std::string get_type() { return NODE_REPEAT;}
+    virtual std::string get_type() { return NODE_ALGODEF;}
     virtual std::shared_ptr<Token> get_tok() { return algo_name;}
     virtual TokenList get_toks() { return args_name;}
     virtual std::string get_name() { return algo_name->get_value();}
@@ -275,14 +277,10 @@ public:
     AlgorithmCallNode(std::shared_ptr<Node> _call_node, const NodeList &_args)
         : call_node(_call_node), args(_args) {}
     virtual std::string get_node();
-    virtual NodeList get_child() { 
-        NodeList ret{call_node}; 
-        for(auto node : args) ret.emplace_back(node); 
-        return ret;
-    }
-    virtual std::string get_type() { return NODE_REPEAT;}
+    virtual NodeList get_child() { return args;}
+    virtual std::string get_type() { return NODE_ALGOCALL;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
-    virtual std::string get_name() { return "";}
+    virtual std::string get_name() { return call_node->get_name();}
 protected:
     std::shared_ptr<Node> call_node;
     NodeList args;
@@ -295,7 +293,7 @@ protected:
 const std::string VALUE_NONE{"NONE"};
 const std::string VALUE_INT{"Int"};
 const std::string VALUE_FLOAT{"Float"};
-const std::string VALUE_ALGO{"ALGO"};
+const std::string VALUE_ALGO{"Algo"};
 const std::string VALUE_ERROR{"ERROR"};
 
 class Value {
@@ -327,11 +325,13 @@ protected:
 using ErrorValue = TypedValue<std::string>;
 
 class AlgoValue: public Value {
-    AlgoValue(std::shared_ptr<Node> _value) 
-        : Value(VALUE_ALGO), value(_value) {}
-    virtual std::string get_num() { return "";};
+public:
+    AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
+        : Value(VALUE_ALGO), value(_value), algo_name(_algo_name) {}
+    virtual std::string get_num() { return algo_name;}
     virtual std::shared_ptr<Value> execute(NodeList args = {});
 protected:
+    std::string algo_name;
     std::shared_ptr<Node> value;
 };
 
@@ -408,7 +408,7 @@ const std::set<std::string> KEYWORDS{
     "for", "to", "step", "while", "do",
     "repeat", "until",
     "if", "then", "else", 
-    "Algotithm"
+    "Algorithm"
 };
 
 class Lexer {
@@ -460,6 +460,8 @@ public:
     std::shared_ptr<Value> visit_for(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_while(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_repeat(std::shared_ptr<Node>);
+    std::shared_ptr<Value> visit_algo_def(std::shared_ptr<Node>);
+    std::shared_ptr<Value> visit_algo_call(std::shared_ptr<Node>);
 
     std::shared_ptr<Value> bin_op(std::shared_ptr<Value>, std::shared_ptr<Value>, std::shared_ptr<Token>);
     std::shared_ptr<Value> unary_op(std::shared_ptr<Value>, std::shared_ptr<Token>);
