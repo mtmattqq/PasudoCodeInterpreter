@@ -104,8 +104,8 @@ std::string TypedValue<T>::get_num() {
     return ret;
 }
 
-std::shared_ptr<Value> AlgoValue::execute(NodeList args) {
-    SymbolTable sym;
+std::shared_ptr<Value> AlgoValue::execute(NodeList args, SymbolTable *parent) {
+    SymbolTable sym(parent);
     Interpreter interpreter(sym);
     if(args.size() < value->get_toks().size()) {
         return std::make_shared<ErrorValue>(VALUE_ERROR, "Too few arguments");
@@ -132,9 +132,11 @@ std::shared_ptr<Value> operator+(std::shared_ptr<Value> a, std::shared_ptr<Value
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
         return std::make_shared<TypedValue<double>>(
             VALUE_FLOAT, std::stod(a->get_num()) + std::stod(b->get_num()));
-    else
+    else if(a->get_type() == VALUE_INT && b->get_type() == VALUE_INT)
         return std::make_shared<TypedValue<int64_t>>(
             VALUE_INT, std::stoll(a->get_num()) + std::stoll(b->get_num()));
+    else
+        return std::make_shared<ErrorValue>(VALUE_ERROR, "Runtime ERROR: ADD operation can only apply on number\n");
 }
 
 std::shared_ptr<Value> operator-(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -670,6 +672,7 @@ std::shared_ptr<Node> Parser::call() {
             return std::make_shared<ErrorNode>(error_token);
         }
     }
+    advance();
     return std::make_shared<AlgorithmCallNode>(at, args);
 }
 
@@ -990,7 +993,7 @@ std::shared_ptr<Value> Interpreter::visit_algo_call(std::shared_ptr<Node> node) 
     NodeList child = node->get_child();
     std::string algo_name = node->get_name();
     std::shared_ptr<Value> algo = symbol_table.get(algo_name);
-    return algo->execute(child);
+    return algo->execute(child, &symbol_table);
 }
 
 std::shared_ptr<Value> Interpreter::bin_op(
@@ -1046,12 +1049,12 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    if(tokens[0]->get_type() == TOKEN_ERROR)
+    // if(tokens[0]->get_type() == TOKEN_ERROR)
         std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    if(ast->get_type() == NODE_ERROR)
+    // if(ast->get_type() == NODE_ERROR)
         std::cout << "Nodes: " << ast->get_node() << "\n";
     if(ast->get_type() == NODE_ERROR) return "ABORT";
 

@@ -296,13 +296,15 @@ const std::string VALUE_FLOAT{"Float"};
 const std::string VALUE_ALGO{"Algo"};
 const std::string VALUE_ERROR{"ERROR"};
 
+class SymbolTable;
 class Value {
 public:
     Value(const std::string& _type = VALUE_NONE)
         : type(_type) {}
-    virtual std::string get_num() { return "";}
+    virtual std::string get_num() { return type;}
     virtual std::string get_type(){ return type;}
-    virtual std::shared_ptr<Value> execute(NodeList args = {}) { return std::make_shared<Value>();};
+    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr)
+        { return std::make_shared<Value>();};
     friend std::ostream& operator<<(std::ostream &out, Value &token);
     
 protected:
@@ -324,12 +326,13 @@ protected:
 
 using ErrorValue = TypedValue<std::string>;
 
+
 class AlgoValue: public Value {
 public:
     AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : Value(VALUE_ALGO), value(_value), algo_name(_algo_name) {}
     virtual std::string get_num() { return algo_name;}
-    virtual std::shared_ptr<Value> execute(NodeList args = {});
+    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
 protected:
     std::string algo_name;
     std::shared_ptr<Node> value;
@@ -432,14 +435,14 @@ protected:
 
 class SymbolTable {
 public:
-    SymbolTable(std::shared_ptr<SymbolTable> _parent = nullptr)
+    SymbolTable(SymbolTable *_parent = nullptr)
         : parent(_parent) {}
     std::shared_ptr<Value> get(std::string);
     void set(std::string, std::shared_ptr<Value>);
     void erase(std::string);
 protected:
     std::map<std::string, std::shared_ptr<Value>> symbols;
-    std::shared_ptr<SymbolTable> parent;
+    SymbolTable *parent;
 };
 
 /// --------------------
