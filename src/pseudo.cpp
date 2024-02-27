@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 /// --------------------
 /// Position
@@ -53,7 +54,7 @@ std::string TypedToken<T>::get_tok() {
     std::stringstream ss;
     if(type == TOKEN_ERROR)
         ss << Color(0xFF, 0x39, 0x6E);
-    ss << type << ": " << value;
+    ss << type << ": " << value << RESET;
     if(type == TOKEN_ERROR)
         ss << Color(0xDB, 0x80, 0xFF) << ". At " << pos << RESET "\n";
     std::string ret;
@@ -108,9 +109,9 @@ std::shared_ptr<Value> AlgoValue::execute(NodeList args, SymbolTable *parent) {
     SymbolTable sym(parent);
     Interpreter interpreter(sym);
     if(args.size() < value->get_toks().size()) {
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Too few arguments");
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Too few arguments" RESET);
     } else if(args.size() > value->get_toks().size()) {
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Too many arguments");
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Too many arguments" RESET);
     }
 
     TokenList args_name = value->get_toks();
@@ -135,42 +136,62 @@ std::shared_ptr<Value> operator+(std::shared_ptr<Value> a, std::shared_ptr<Value
     else if(a->get_type() == VALUE_INT && b->get_type() == VALUE_INT)
         return std::make_shared<TypedValue<int64_t>>(
             VALUE_INT, std::stoll(a->get_num()) + std::stoll(b->get_num()));
+    else if(a->get_type() == VALUE_STRING && b->get_type() == VALUE_STRING)
+        return std::make_shared<TypedValue<std::string>>(
+            VALUE_STRING, a->get_num() + b->get_num());
     else
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Runtime ERROR: ADD operation can only apply on number\n");
+        return std::make_shared<ErrorValue>(
+            VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: ADD operation can only apply on number or two string\n" RESET);
 }
 
 std::shared_ptr<Value> operator-(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
         return std::make_shared<TypedValue<double>>(
             VALUE_FLOAT, std::stod(a->get_num()) - std::stod(b->get_num()));
-    else
+    else if(a->get_type() == VALUE_INT && b->get_type() == VALUE_INT)
         return std::make_shared<TypedValue<int64_t>>(
             VALUE_INT, std::stoll(a->get_num()) - std::stoll(b->get_num()));
+    else
+        return std::make_shared<ErrorValue>(
+            VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: SUB operation can only apply on number\n" RESET);
 }
 
 std::shared_ptr<Value> operator*(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
         return std::make_shared<TypedValue<double>>(
             VALUE_FLOAT, std::stod(a->get_num()) * std::stod(b->get_num()));
-    else
+    else if(a->get_type() == VALUE_INT && b->get_type() == VALUE_INT)
         return std::make_shared<TypedValue<int64_t>>(
             VALUE_INT, std::stoll(a->get_num()) * std::stoll(b->get_num()));
+    else if(a->get_type() == VALUE_STRING && b->get_type() == VALUE_INT) {
+        std::string ret, str_a{a->get_num()};
+        int64_t times{stoll(b->get_num())};
+        for(int i{0}; i < times; ++i)
+            ret += str_a;
+        return std::make_shared<TypedValue<std::string>>(
+            VALUE_STRING, ret);
+    } else
+        return std::make_shared<ErrorValue>(
+            VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: MUL operation can only apply on number or string and int\n" RESET);
 }
 
 std::shared_ptr<Value> operator/(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(std::stod(b->get_num()) == 0.0) 
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Runtime ERROR: DIV by 0\n");
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: DIV by 0\n" RESET);
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
         return std::make_shared<TypedValue<double>>(
             VALUE_FLOAT, std::stod(a->get_num()) / std::stod(b->get_num()));
-    else
+    else if(a->get_type() == VALUE_INT && b->get_type() == VALUE_INT)
         return std::make_shared<TypedValue<int64_t>>(
             VALUE_INT, std::stoll(a->get_num()) / std::stoll(b->get_num()));
+    else
+        return std::make_shared<ErrorValue>(
+            VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: DIV operation can only apply on number\n" RESET);
 }
 
 std::shared_ptr<Value> operator%(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(a->get_type() != VALUE_INT || b->get_type() != VALUE_INT) 
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Float doesn't have \"%\" operation\n");
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Float doesn't have \"%\" operation\n" RESET);
     return std::make_shared<TypedValue<int64_t>>(
         VALUE_INT, std::stoll(a->get_num()) % std::stoll(b->get_num()));
 }
@@ -181,7 +202,7 @@ std::shared_ptr<Value> operator==(std::shared_ptr<Value> a, std::shared_ptr<Valu
             VALUE_INT, std::stod(a->get_num()) == std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) == std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() == b->get_num());
 }
 
 std::shared_ptr<Value> operator!=(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -190,7 +211,7 @@ std::shared_ptr<Value> operator!=(std::shared_ptr<Value> a, std::shared_ptr<Valu
             VALUE_INT, std::stod(a->get_num()) != std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) != std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() != b->get_num());
 }
 
 std::shared_ptr<Value> operator<(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -199,7 +220,7 @@ std::shared_ptr<Value> operator<(std::shared_ptr<Value> a, std::shared_ptr<Value
             VALUE_INT, std::stod(a->get_num()) < std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) < std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() < b->get_num());
 }
 
 std::shared_ptr<Value> operator>(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -208,7 +229,7 @@ std::shared_ptr<Value> operator>(std::shared_ptr<Value> a, std::shared_ptr<Value
             VALUE_INT, std::stod(a->get_num()) > std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) > std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() > b->get_num());
 }
 
 std::shared_ptr<Value> operator<=(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -217,7 +238,7 @@ std::shared_ptr<Value> operator<=(std::shared_ptr<Value> a, std::shared_ptr<Valu
             VALUE_INT, std::stod(a->get_num()) <= std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) <= std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() <= b->get_num());
 }
 
 std::shared_ptr<Value> operator>=(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -226,7 +247,7 @@ std::shared_ptr<Value> operator>=(std::shared_ptr<Value> a, std::shared_ptr<Valu
             VALUE_INT, std::stod(a->get_num()) >= std::stod(b->get_num()));
     else
         return std::make_shared<TypedValue<int64_t>>(
-            VALUE_INT, std::stoll(a->get_num()) >= std::stoll(b->get_num()));
+            VALUE_INT, a->get_num() >= b->get_num());
 }
 
 std::shared_ptr<Value> operator&&(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
@@ -263,7 +284,7 @@ std::shared_ptr<Value> operator!(std::shared_ptr<Value> a) {
 
 std::shared_ptr<Value> pow(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(std::stod(a->get_num()) == 0.0 && std::stod(b->get_num()) == 0.0) 
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Runtime ERROR: 0 to the 0\n");
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Runtime ERROR: 0 to the 0\n" RESET);
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
         return std::make_shared<TypedValue<double>>(
             VALUE_FLOAT, std::pow(std::stod(a->get_num()), std::stod(b->get_num())));
@@ -414,6 +435,9 @@ std::shared_ptr<Node> Parser::atom() {
     if(tok->isnumber()) {
         advance();
         return std::make_shared<ValueNode>(tok);
+    } else if(tok->get_type() == TOKEN_STRING) {
+        advance();
+        return std::make_shared<ValueNode>(tok);
     } else if(tok->get_type() == TOKEN_LEFT_PAREN) {
         advance();
         std::shared_ptr<Node> e = expr();
@@ -456,21 +480,21 @@ std::shared_ptr<Node> Parser::factor() {
 }
 
 std::shared_ptr<Node> Parser::term() {
-    return bin_op(std::bind(&Parser::factor, this), {TOKEN_MUL, TOKEN_DIV}, std::bind(&Parser::factor, this));
+    return bin_op(std::bind(&Parser::factor, this), {TOKEN_MUL, TOKEN_DIV, TOKEN_MOD}, std::bind(&Parser::factor, this));
 }
 
 std::shared_ptr<Node> Parser::expr() {
     if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "var") {
         advance();
         if(current_tok->get_type() != TOKEN_IDENTIFIER) {
-            std::string error_msg = "Expected Identifier\n";
+            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected Identifier\n" RESET;
             std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
             return std::make_shared<ErrorNode>(error_token);
         }
         std::string var_name = current_tok->get_value();
         advance();
         if(current_tok->get_type() != TOKEN_ASSIGN) {
-            std::string error_msg = "Expected \"<-\"\n";
+            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"<-\"\n" RESET;
             std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
             return std::make_shared<ErrorNode>(error_token);
         }
@@ -502,7 +526,7 @@ std::shared_ptr<Node> Parser::if_expr() {
     std::shared_ptr<Node> condition = expr();
     if(condition->get_type() == NODE_ERROR) return condition;
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "then")) {
-        std::string error_msg = "Expected \"then\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"then\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -525,13 +549,13 @@ std::shared_ptr<Node> Parser::if_expr() {
 std::shared_ptr<Node> Parser::for_expr() {
     std::shared_ptr<Token> var_name = current_tok;
     if(current_tok->get_type() != TOKEN_IDENTIFIER) {
-        std::string error_msg = "Expected \"an identifier\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"an identifier\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
     advance();
     if(current_tok->get_type() != TOKEN_ASSIGN) {
-        std::string error_msg = "Expected \"<-\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"<-\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -541,7 +565,7 @@ std::shared_ptr<Node> Parser::for_expr() {
     std::shared_ptr<Node> var_assign = std::make_shared<VarAssignNode>(var_name->get_value(), start_value);
     
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "to")) {
-        std::string error_msg = "Expected \"to\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"to\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -556,7 +580,7 @@ std::shared_ptr<Node> Parser::for_expr() {
         if(step_value->get_type() == NODE_ERROR) return step_value;
     }
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "do")) {
-        std::string error_msg = "Expected \"do\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"do\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -570,7 +594,7 @@ std::shared_ptr<Node> Parser::while_expr() {
     std::shared_ptr<Node> condition = expr();
     if(condition->get_type() == NODE_ERROR) return condition;
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "do")) {
-        std::string error_msg = "Expected \"do\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"do\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -584,7 +608,7 @@ std::shared_ptr<Node> Parser::repeat_expr() {
     std::shared_ptr<Node> body_node = expr();
     if(body_node->get_type() == NODE_ERROR) return body_node;
     if(!(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "until")) {
-        std::string error_msg = "Expected \"until\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"until\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -599,14 +623,14 @@ std::shared_ptr<Node> Parser::algo_def() {
     if(current_tok->get_type() == TOKEN_IDENTIFIER) {
         advance();
         if(current_tok->get_type() != TOKEN_LEFT_PAREN) {
-            std::string error_msg = "Expected a \"(\"\n";
+            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected a \"(\"\n" RESET;
             std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
             return std::make_shared<ErrorNode>(error_token);
         }
     } else if(current_tok->get_type() != TOKEN_LEFT_PAREN) {
         algo_name = std::make_shared<TypedToken<std::string>>(TOKEN_IDENTIFIER, current_tok->get_pos(), "Anonymous");
     } else {
-        std::string error_msg = "Expected an \"identifier\" or \"(\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected an \"identifier\" or \"(\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -618,7 +642,7 @@ std::shared_ptr<Node> Parser::algo_def() {
         while(current_tok->get_type() == TOKEN_COMMA) {
             advance();
             if(current_tok->get_type() != TOKEN_IDENTIFIER) {
-                std::string error_msg = "Expected an \"identifier\" or a \"(\"\n";
+                std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected an \"identifier\" or a \"(\"\n" RESET;
                 std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
                 return std::make_shared<ErrorNode>(error_token);
             }
@@ -628,13 +652,13 @@ std::shared_ptr<Node> Parser::algo_def() {
     }
 
     if(current_tok->get_type() != TOKEN_RIGHT_PAREN) {
-        std::string error_msg = "Expected a \")\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected a \")\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
     advance();
     if(current_tok->get_type() != TOKEN_COLON) {
-        std::string error_msg = "Expected a \":\"\n";
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected a \":\"\n" RESET;
         std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
         return std::make_shared<ErrorNode>(error_token);
     }
@@ -667,7 +691,7 @@ std::shared_ptr<Node> Parser::call() {
             if(args.back()->get_type() == NODE_ERROR) return args.back();
         }
         if(current_tok->get_type() != TOKEN_RIGHT_PAREN) {
-            std::string error_msg = "Expected a \")\"\n";
+            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected a \")\"\n" RESET;
             std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
             return std::make_shared<ErrorNode>(error_token);
         }
@@ -729,6 +753,16 @@ TokenList Lexer::make_tokens() {
         }
         if(std::isalpha(current_char)) {
             tokens.push_back(make_identifier());
+            continue;
+        }
+        if(current_char == '\"') {
+            std::shared_ptr<Token> new_token = make_string();
+            if(new_token->get_type() == TOKEN_ERROR) {
+                tokens.clear();
+                tokens.push_back(new_token);
+                return tokens;
+            }
+            tokens.push_back(new_token);
             continue;
         }
 
@@ -810,6 +844,30 @@ std::shared_ptr<Token> Lexer::make_identifier() {
     return std::make_shared<TypedToken<std::string>>(type, pos, id_str);
 }
 
+std::shared_ptr<Token> Lexer::make_string() {
+    advance();
+    std::string ret;
+    while(current_char != NONE && current_char != '\"') {
+        if(current_char == '\\') {
+            advance();
+            if(ESCAPE_CHAR.count(current_char))
+                ret += ESCAPE_CHAR.at(current_char);
+            else
+                return std::make_shared<ErrorToken>(
+                    TOKEN_ERROR, pos, Color(0xFF, 0x39, 0x6E).get() + "Unknown char after \'\\\'" RESET);
+            advance();
+            continue;
+        }
+        ret += current_char;
+        advance();
+    }
+    if(current_char != '\"')
+        return std::make_shared<ErrorToken>(
+            TOKEN_ERROR, pos, Color(0xFF, 0x39, 0x6E).get() + "Expected \'\"\'" RESET);
+    advance();
+    return std::make_shared<TypedToken<std::string>>(TOKEN_STRING, pos, ret);
+}
+
 /// --------------------
 /// SymbolTable
 /// --------------------
@@ -819,7 +877,8 @@ std::shared_ptr<Value> SymbolTable::get(std::string name) {
         if(parent != nullptr) {
             return parent->get(name);
         } else {
-            return std::make_shared<ErrorValue>(VALUE_ERROR, "Identifier: \""+ name +"\" has not defined\n");
+            return std::make_shared<ErrorValue>(
+                VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Identifier: \""+ name +"\" has not defined\n" RESET);
         }
     }
     return symbols[name];
@@ -879,8 +938,10 @@ std::shared_ptr<Value> Interpreter::visit_number(std::shared_ptr<Node> node) {
         return std::make_shared<TypedValue<int64_t>>(VALUE_INT, std::stoll(node->get_tok()->get_value()));
     else if(node->get_tok()->get_type() == TOKEN_FLOAT)
         return std::make_shared<TypedValue<double>>(VALUE_FLOAT, std::stod(node->get_tok()->get_value()));
+    else if(node->get_tok()->get_type() == TOKEN_STRING)
+        return std::make_shared<TypedValue<std::string>>(VALUE_STRING, node->get_tok()->get_value());
     else
-        return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
+        return std::make_shared<ErrorValue>(VALUE_ERROR, "Not a value type\n");
 }
 
 std::shared_ptr<Value> Interpreter::visit_var_access(std::shared_ptr<Node> node) {
@@ -1049,18 +1110,18 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    // if(tokens[0]->get_type() == TOKEN_ERROR)
+    if(tokens[0]->get_type() == TOKEN_ERROR)
         std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    // if(ast->get_type() == NODE_ERROR)
+    if(ast->get_type() == NODE_ERROR)
         std::cout << "Nodes: " << ast->get_node() << "\n";
     if(ast->get_type() == NODE_ERROR) return "ABORT";
 
     Interpreter interpreter(global_symbol_table);
     std::shared_ptr<Value> ret = interpreter.visit(ast);
-    std::cout << "Result: " << ret->get_num() << "\n";
+    std::cout << ret->get_num() << "\n";
     if(ret->get_type() == VALUE_ERROR) return "ABORT";
     return "";
 }

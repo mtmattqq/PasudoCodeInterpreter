@@ -53,9 +53,11 @@ const std::string TOKEN_GEQ{"GEQ"};
 // function
 const std::string TOKEN_COMMA{"COMMA"};
 const std::string TOKEN_COLON{"COLON"};
+const std::string TOKEN_ARGS{"ARGS"};
+// string
+const std::string TOKEN_STRING{"STR"};
 
 const std::string TOKEN_ERROR{"ERROR"};
-const std::string TOKEN_ARGS{"ARGS"};
 
 class Token {
 public:
@@ -294,6 +296,7 @@ const std::string VALUE_NONE{"NONE"};
 const std::string VALUE_INT{"Int"};
 const std::string VALUE_FLOAT{"Float"};
 const std::string VALUE_ALGO{"Algo"};
+const std::string VALUE_STRING{"Str"};
 const std::string VALUE_ERROR{"ERROR"};
 
 class SymbolTable;
@@ -325,7 +328,6 @@ protected:
 };
 
 using ErrorValue = TypedValue<std::string>;
-
 
 class AlgoValue: public Value {
 public:
@@ -414,6 +416,13 @@ const std::set<std::string> KEYWORDS{
     "Algorithm"
 };
 
+const std::map<char, char> ESCAPE_CHAR {
+    {'n', '\n'}, {'r', '\r'},
+    {'b', '\b'}, {'\"', '\"'},
+    {'\'', '\''}, {'\\', '\\'},
+    {'t', '\t'}, {'b', '\b'}
+};
+
 class Lexer {
 public:
     Lexer(const std::string& _file_name, const std::string& _text)
@@ -423,6 +432,7 @@ public:
     TokenList make_tokens();
     std::shared_ptr<Token> make_number();
     std::shared_ptr<Token> make_identifier();
+    std::shared_ptr<Token> make_string();
 protected:
     std::string file_name, text;
     Position pos;

@@ -33,7 +33,7 @@ Let's make the pseudo code a actual programming language.
 - `call :`
     - atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?
 - `atom :`
-    - `INT|FLOAT|IDENTIFIER`
+    - `INT|FLOAT|STRING|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
     - `if-expr`
     - `for-expr`
@@ -103,3 +103,19 @@ Function begin with `Algorithm`, an example for adding two number would be
 Algorithm add(a, b):
     return a + b
 ```
+
+## Data Type
+
+### Int
+
+### Float
+
+### String
+
+- `"This is the string"` : We use the quoatation mark to wrap a string.
+- `"\""` : This would be considered as `"`
+- `"\n"` : Newline
+- `"\r"` : Back to first place of the current line
+- `"\\"` : This would be considered as a `\`
+
+### Algo
