@@ -2,7 +2,40 @@
 
 Let's make the pseudo code a actual programming language.
 
-## Language
+## Data Type
+
+### Int
+
+- A common 64 bit integer.
+
+### Float
+
+- A common 64 bit floating point number.
+
+### String
+
+- `"This is the string"` : We use the quoatation mark to wrap a string.
+- `"\""` : This would be considered as `"`
+- `"\n"` : Newline
+- `"\r"` : Back to first place of the current line
+- `"\\"` : This would be considered as a `\`
+
+### Array
+
+- `Initialize by` : `var arr <- {1, 2, 3}`
+- `Index count from 1`
+- `You can put whatever data type you want into array`
+
+## Built in Functions
+
+- `print(s)` : print the data
+- `read()` : read one string saperate by space, tab, and newline
+- `read_line()` : read one line and return string
+- `clear()` : clear the screen
+- `quit()` : quit the interpreter
+- `int/flaot/string(v)` : data convertion
+
+## Expersion For User
 
 ### Operators and Operations
 
@@ -13,51 +46,6 @@ Let's make the pseudo code a actual programming language.
 - `/` : division
 - `%` : mod operation
 - `^` : power operation
-
-### Expression
-
-- `expr :`
-    - `var IDENTIFIER ASSIGN expr`
-    - `comp-expr ((and|or) comp-expr)*`
-- `comp-expr :`
-    - `not comp-expr`
-    - `arith-expr ((EQUAL|NEQ|LESS|GREATER|LEQ|GEQ) arith-expr)*`
-- `arith-expr :`
-    - `term ((ADD|SUB) term)*`
-- `term :`
-    - `factor ((MUL|DIV|MOD) factor)*`
-- `factor :`
-    - `(ADD|SUB) factor`
-    - `power`
-- `power :`
-    - `call (POW factor)*`
-- `call :`
-    - `atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?`
-    - `array-access`
-- `atom :`
-    - `INT|FLOAT|STRING|IDENTIFIER`
-    - `LEFT_PAREN expr RIGHT_PAREN`
-    - `array-expr`
-    - `if-expr`
-    - `for-expr`
-    - `while-expr`
-    - `repeat-expr`
-    - `algo-def`
-- `array-access :`
-    - `atom LEFT_SQUARE expr RIGHT_SQUARE`
-- `array-expr :`
-    - LEFT_BRACE (expr (COMMA expr)*)? RIGHT_BRACE
-- `if-expr :`
-    - `if expr then expr (else (if-expr|expr))?`
-- `for-expr :`
-    - `for IDENTIFIER ASSIGN expr to expr (step)? expr do expr`    
-- `while-expr :`
-    - `while expr do expr`
-- `repeat-expr :`
-    - `repeat expr until expr`
-- `algo-def`
-    - `Algorithm IDENTIFIER? LEFT_PAREN (IDENTIFIER (COMMA IDENTIFIER)*)?  RIGHT_PAREN COLON expr`
-
 
 ### if statement
 
@@ -111,22 +99,46 @@ Algorithm add(a, b):
     return a + b
 ```
 
-## Data Type
+### Expression Rule
 
-### Int
-
-- A common 64 bit integer.
-
-### Float
-
-- A common 64 bit floating point number.
-
-### String
-
-- `"This is the string"` : We use the quoatation mark to wrap a string.
-- `"\""` : This would be considered as `"`
-- `"\n"` : Newline
-- `"\r"` : Back to first place of the current line
-- `"\\"` : This would be considered as a `\`
-
-### Algo
+- `expr :`
+    - `var IDENTIFIER ASSIGN expr`
+    - `comp-expr ((and|or) comp-expr)*`
+- `comp-expr :`
+    - `not comp-expr`
+    - `arith-expr ((EQUAL|NEQ|LESS|GREATER|LEQ|GEQ) arith-expr)*`
+- `arith-expr :`
+    - `term ((ADD|SUB) term)*`
+- `term :`
+    - `factor ((MUL|DIV|MOD) factor)*`
+- `factor :`
+    - `(ADD|SUB) factor`
+    - `power`
+- `power :`
+    - `call (POW factor)*`
+- `call :`
+    - `atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?`
+    - `array-access`
+- `atom :`
+    - `INT|FLOAT|STRING|IDENTIFIER`
+    - `LEFT_PAREN expr RIGHT_PAREN`
+    - `array-expr`
+    - `if-expr`
+    - `for-expr`
+    - `while-expr`
+    - `repeat-expr`
+    - `algo-def`
+- `array-access :`
+    - `atom LEFT_SQUARE expr RIGHT_SQUARE`
+- `array-expr :`
+    - LEFT_BRACE (expr (COMMA expr)*)? RIGHT_BRACE
+- `if-expr :`
+    - `if expr then expr (else (if-expr|expr))?`
+- `for-expr :`
+    - `for IDENTIFIER ASSIGN expr to expr (step)? expr do expr`    
+- `while-expr :`
+    - `while expr do expr`
+- `repeat-expr :`
+    - `repeat expr until expr`
+- `algo-def`
+    - `Algorithm IDENTIFIER? LEFT_PAREN (IDENTIFIER (COMMA IDENTIFIER)*)?  RIGHT_PAREN COLON expr`
