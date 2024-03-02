@@ -28,9 +28,12 @@ struct Position {
 /// Token
 /// --------------------
 
+// Builtin
 const std::string TOKEN_KEYWORD{"KEYWORD"};
 const std::string TOKEN_IDENTIFIER{"IDENTIFIER"};
 const std::string TOKEN_ASSIGN{"ASSIGN"};
+const std::string TOKEN_BUILTIN_CONST{"BICONST"};
+const std::string TOKEN_BUILTIN_ALGO{"BIALGO"};
 
 const std::string TOKEN_INT{"INT"};
 const std::string TOKEN_FLOAT{"FLOAT"};
@@ -59,7 +62,10 @@ const std::string TOKEN_STRING{"STR"};
 // Array
 const std::string TOKEN_LEFT_BRACE{"LBRACE"};
 const std::string TOKEN_RIGHT_BRACE{"RBRACE"};
-
+const std::string TOKEN_LEFT_SQUARE{"LSQUARE"};
+const std::string TOKEN_RIGHT_SQUARE{"RSQUARE"};
+const std::string TOKEN_DOT{"DOT"};
+// Error
 const std::string TOKEN_ERROR{"ERROR"};
 
 class Token {
@@ -111,6 +117,7 @@ const std::string NODE_REPEAT("REPEAT");
 const std::string NODE_ALGODEF("ALGO");
 const std::string NODE_ALGOCALL("CALL");
 const std::string NODE_ARRAY("ARRAY");
+const std::string NODE_ARRACCESS("ARRACCESS");
 const std::string TAB{"    "};
 
 class Node {
@@ -264,7 +271,7 @@ protected:
 
 class AlgorithmDefNode: public Node {
 public:
-    AlgorithmDefNode(std::shared_ptr<Token> _algo_name, const TokenList &_args_name, NodeList _body_node)
+    AlgorithmDefNode(std::shared_ptr<Token> _algo_name, const TokenList &_args_name, NodeList _body_node = {})
         : algo_name(_algo_name), args_name(_args_name), body_node(_body_node) {}
     virtual std::string get_node();
     virtual NodeList get_child() { return body_node;}
@@ -305,6 +312,18 @@ protected:
     NodeList elements_node;
 };
 
+class ArrayAccessNode: public Node {
+public:
+    ArrayAccessNode(std::shared_ptr<Node> _arr, std::shared_ptr<Node> _index)
+        : arr(_arr), index(_index) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{arr, index};}
+    virtual std::string get_type() { return NODE_ARRACCESS;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+protected:
+    std::shared_ptr<Node> arr, index;
+};
+
 /// --------------------
 /// Value
 /// --------------------
@@ -318,6 +337,7 @@ const std::string VALUE_ERROR{"ERROR"};
 const std::string VALUE_ARRAY{"Array"};
 
 class SymbolTable;
+class Interpreter;
 class Value {
 public:
     Value(const std::string& _type = VALUE_NONE)
@@ -347,15 +367,40 @@ protected:
 
 using ErrorValue = TypedValue<std::string>;
 
-class AlgoValue: public Value {
+class BaseAlgoValue: public Value {
 public:
-    AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
+    BaseAlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : Value(VALUE_ALGO), value(_value), algo_name(_algo_name) {}
     virtual std::string get_num() { return algo_name;}
-    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
+    virtual std::shared_ptr<Value> set_args(NodeList&, SymbolTable&, Interpreter&);
 protected:
     std::string algo_name;
     std::shared_ptr<Node> value;
+};
+
+class AlgoValue: public BaseAlgoValue {
+public:
+    AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
+        : BaseAlgoValue(_algo_name, _value) {}
+    virtual std::string get_num() { return algo_name;}
+    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
+protected:
+};
+
+class BuiltinAlgoValue: public BaseAlgoValue {
+public:
+    BuiltinAlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
+        : BaseAlgoValue(_algo_name, _value) {}
+    virtual std::string get_num() { return algo_name;}
+    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
+    std::shared_ptr<Value> execute_print(const std::string&);
+    std::shared_ptr<Value> execute_read();
+    std::shared_ptr<Value> execute_read_line();
+    std::shared_ptr<Value> execute_clear();
+    std::shared_ptr<Value> execute_int(const std::string&);
+    std::shared_ptr<Value> execute_float(const std::string&);
+    std::shared_ptr<Value> execute_string(const std::string&);
+protected:
 };
 
 class ArrayValue: public Value {
@@ -436,7 +481,8 @@ const std::map<char, std::string> TO_TOKEN_TYPE {
     {')', TOKEN_RIGHT_PAREN}, {'^', TOKEN_POW},
     {'=', TOKEN_EQUAL}, {',', TOKEN_COMMA},
     {':', TOKEN_COLON}, {'{', TOKEN_LEFT_BRACE},
-    {'}', TOKEN_RIGHT_BRACE}
+    {'}', TOKEN_RIGHT_BRACE}, {'[', TOKEN_LEFT_SQUARE},
+    {']', TOKEN_RIGHT_SQUARE}
 };
 
 const std::set<std::string> KEYWORDS{
@@ -446,6 +492,16 @@ const std::set<std::string> KEYWORDS{
     "repeat", "until",
     "if", "then", "else", 
     "Algorithm", "continue", "break"
+};
+
+const std::map<std::string, int64_t> BUILTIN_CONST{
+    {"true", 1}, {"false", 0}, {"none", 0}
+};
+
+const std::set<std::string> BUILTIN_ALGO{
+    "print", "read", "read_line",
+    "open", "clear", "quit",
+    "int", "float", "string"
 };
 
 const std::map<char, char> ESCAPE_CHAR {
@@ -474,6 +530,36 @@ protected:
 /// --------------------
 /// SymbolTable
 /// --------------------
+
+const std::map<std::string, std::shared_ptr<Value>> BUILTIN_ALGOS {
+    {"print", std::make_shared<BuiltinAlgoValue>("print", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "print"), 
+        TokenList{std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "s")}))}, 
+    {"read", std::make_shared<BuiltinAlgoValue>("read", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "read"), 
+        TokenList{}))},
+    {"read_line", std::make_shared<BuiltinAlgoValue>("read_line", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "read_line"), 
+        TokenList{}))},
+    {"open", std::make_shared<BuiltinAlgoValue>("open", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "open"), 
+        TokenList{}))},
+    {"clear", std::make_shared<BuiltinAlgoValue>("clear", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "clear"), 
+        TokenList{}))},
+    {"quit", std::make_shared<BuiltinAlgoValue>("quit", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "quit"), 
+        TokenList{}))},
+    {"int", std::make_shared<BuiltinAlgoValue>("int", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "int"), 
+        TokenList{std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "n")}))}, 
+    {"float", std::make_shared<BuiltinAlgoValue>("float",
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "float"), 
+        TokenList{std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "n")}))}, 
+    {"string", std::make_shared<BuiltinAlgoValue>("string", 
+        std::make_shared<AlgorithmDefNode>(std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "string"), 
+        TokenList{std::make_shared<TypedToken<std::string>>(TOKEN_STRING, Position(), "s")}))}, 
+};
 
 class SymbolTable {
 public:
@@ -508,6 +594,7 @@ public:
     std::shared_ptr<Value> visit_repeat(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_algo_def(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_algo_call(std::shared_ptr<Node>);
+    std::shared_ptr<Value> visit_array_access(std::shared_ptr<Node>);
 
     std::shared_ptr<Value> bin_op(std::shared_ptr<Value>, std::shared_ptr<Value>, std::shared_ptr<Token>);
     std::shared_ptr<Value> unary_op(std::shared_ptr<Value>, std::shared_ptr<Token>);

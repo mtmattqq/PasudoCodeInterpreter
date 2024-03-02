@@ -28,10 +28,12 @@ Let's make the pseudo code a actual programming language.
     - `factor ((MUL|DIV|MOD) factor)*`
 - `factor :`
     - `(ADD|SUB) factor`
+    - `power`
 - `power :`
     - `call (POW factor)*`
 - `call :`
-    - atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?
+    - `atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?`
+    - `array-access`
 - `atom :`
     - `INT|FLOAT|STRING|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
@@ -41,6 +43,8 @@ Let's make the pseudo code a actual programming language.
     - `while-expr`
     - `repeat-expr`
     - `algo-def`
+- `array-access :`
+    - `atom LEFT_SQUARE expr RIGHT_SQUARE`
 - `array-expr :`
     - LEFT_BRACE (expr (COMMA expr)*)? RIGHT_BRACE
 - `if-expr :`
