@@ -105,6 +105,36 @@ std::string TypedValue<T>::get_num() {
     return ret;
 }
 
+std::string ArrayValue::get_num() {
+    std::stringstream ss;
+    ss << "{";
+    if(!value.empty()) ss << value[0]->get_num();
+    for(int i{1}; i < value.size(); ++i) {
+        ss << ", " << value[i]->get_num();
+    }
+    ss << "}";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
+void ArrayValue::push_back(std::shared_ptr<Value> new_value) {
+    value.push_back(new_value);
+}
+
+std::shared_ptr<Value> ArrayValue::pop_back() {
+    if(value.empty())
+        return std::make_shared<ErrorValue>(VALUE_ERROR, "Pop a empty array");
+    value.pop_back();
+    return value.back();
+}
+
+std::shared_ptr<Value> ArrayValue::operator[](int p) {
+    if(1 <= p && p <= value.size())
+        return value[p];
+    return std::make_shared<ErrorValue>(VALUE_ERROR, "Index out of range");
+}
+
 std::shared_ptr<Value> AlgoValue::execute(NodeList args, SymbolTable *parent) {
     SymbolTable sym(parent);
     Interpreter interpreter(sym);
@@ -127,7 +157,6 @@ std::shared_ptr<Value> AlgoValue::execute(NodeList args, SymbolTable *parent) {
     }
     return ret;
 }
-
 
 std::shared_ptr<Value> operator+(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(a->get_type() == VALUE_FLOAT || b->get_type() == VALUE_FLOAT)
@@ -416,6 +445,21 @@ std::string AlgorithmCallNode::get_node() {
     return ret;
 }
 
+std::string ArrayNode::get_node() {
+    std::stringstream ss;
+    ss << "{";
+    if(!elements_node.empty()) {
+        ss << elements_node[0]->get_node();
+    }
+    for(int i{1}; i < elements_node.size(); ++i) {
+        ss << ", " << elements_node[i]->get_node();
+    }
+    ss << "}";
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}
+
 /// --------------------
 /// Parser
 /// --------------------
@@ -463,6 +507,9 @@ std::shared_ptr<Node> Parser::atom() {
     } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "Algorithm") {
         advance();
         return algo_def();
+    } else if(tok->get_type() == TOKEN_LEFT_BRACE) {
+        advance();
+        return array_expr();
     }
 
     error_msg += current_tok->get_tok() + "\"\n";
@@ -520,6 +567,27 @@ std::shared_ptr<Node> Parser::comp_expr() {
 
 std::shared_ptr<Node> Parser::arith_expr() {
     return bin_op(std::bind(&Parser::term, this), {TOKEN_ADD, TOKEN_SUB}, std::bind(&Parser::term, this));
+}
+
+std::shared_ptr<Node> Parser::array_expr() {
+    NodeList ret;
+    if(current_tok->get_type() == TOKEN_RIGHT_BRACE) {
+        advance();
+        return std::make_shared<ArrayNode>(ret);
+    }
+    ret.push_back(expr());
+    if(ret.back()->get_type() == NODE_ERROR) return ret.back();
+    while(current_tok->get_type() == TOKEN_COMMA) {
+        advance();
+        ret.push_back(expr());
+        if(ret.back()->get_type() == NODE_ERROR) return ret.back();
+    }
+    if(current_tok->get_type() != TOKEN_RIGHT_BRACE) {
+        std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected a \"}\"\n" RESET;
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
+    }
+    return std::make_shared<ArrayNode>(ret);
 }
 
 std::shared_ptr<Node> Parser::if_expr() {
@@ -771,7 +839,7 @@ TokenList Lexer::make_tokens() {
             advance(); break;
             
             case '+': case '-': case '*': case '/': case '%': case '^': case '(': case ')':
-            case '=': case ',': case ':':
+            case '=': case ',': case ':': case '{': case '}':
             tokens.push_back(std::make_shared<Token>(TO_TOKEN_TYPE.at(current_char), pos));
             advance(); break;
             case '<':
@@ -930,6 +998,9 @@ std::shared_ptr<Value> Interpreter::visit(std::shared_ptr<Node> node) {
     if(node->get_type() == NODE_ALGOCALL) {
         return visit_algo_call(node);
     }
+    if(node->get_type() == NODE_ARRAY) {
+        return visit_array(node);
+    }
     return std::make_shared<ErrorValue>(VALUE_ERROR, "Fail to get result\n");
 }
 
@@ -977,6 +1048,15 @@ std::shared_ptr<Value> Interpreter::visit_unary_op(std::shared_ptr<Node> node) {
     return unary_op(a, node->get_tok());
 }
 
+std::shared_ptr<Value> Interpreter::visit_array(std::shared_ptr<Node> node) {
+    NodeList child = node->get_child();
+    ValueList array_value;
+    for(int i{0}; i < child.size(); ++i) {
+        array_value.push_back(visit(child[i]));
+    }
+    return std::make_shared<ArrayValue>(array_value);
+}
+
 std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
     std::shared_ptr<Value> cond = visit(child[0]);
@@ -1013,34 +1093,37 @@ std::shared_ptr<Value> Interpreter::visit_for(std::shared_ptr<Node> node) {
         return std::make_shared<ErrorValue>(VALUE_ERROR, "Infinite for loop\n");
     }
 
+    ValueList ret;
     while(condition(i, end_value)) {
-        std::shared_ptr<Value> ret = visit(child[3]);
-        if(ret->get_type() == VALUE_ERROR) 
-            return ret;
+        ret.push_back(visit(child[3]));
+        if(ret.back()->get_type() == VALUE_ERROR) 
+            return ret.back();
         symbol_table.set(child[0]->get_name(), i + step);
         i = symbol_table.get(child[0]->get_name());
     }
-    return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
+    return std::make_shared<ArrayValue>(ret);
 }
 
 std::shared_ptr<Value> Interpreter::visit_while(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
+    ValueList ret;
     while(std::stoll(visit(child[0])->get_num()) == 1) {
-        std::shared_ptr<Value> ret = visit(child[1]);
-        if(ret->get_type() == VALUE_ERROR) 
-            return ret;
+        ret.push_back(visit(child[1]));
+        if(ret.back()->get_type() == VALUE_ERROR) 
+            return ret.back();
     }
-    return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
+    return std::make_shared<ArrayValue>(ret);
 }
 
 std::shared_ptr<Value> Interpreter::visit_repeat(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
+    ValueList ret;
     do {
-        std::shared_ptr<Value> ret = visit(child[0]);
-        if(ret->get_type() == VALUE_ERROR) 
-            return ret;
+        ret.push_back(visit(child[0]));
+        if(ret.back()->get_type() == VALUE_ERROR) 
+            return ret.back();
     } while(std::stoll(visit(child[1])->get_num()) == 0);
-    return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
+    return std::make_shared<ArrayValue>(ret);
 }
 
 std::shared_ptr<Value> Interpreter::visit_algo_def(std::shared_ptr<Node> node) {

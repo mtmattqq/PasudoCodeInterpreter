@@ -34,7 +34,7 @@ const std::string TOKEN_ASSIGN{"ASSIGN"};
 
 const std::string TOKEN_INT{"INT"};
 const std::string TOKEN_FLOAT{"FLOAT"};
-// Arithmic
+// Arithmetic
 const std::string TOKEN_ADD{"ADD"};
 const std::string TOKEN_SUB{"SUB"};
 const std::string TOKEN_MUL{"MUL"};
@@ -56,6 +56,9 @@ const std::string TOKEN_COLON{"COLON"};
 const std::string TOKEN_ARGS{"ARGS"};
 // string
 const std::string TOKEN_STRING{"STR"};
+// Array
+const std::string TOKEN_LEFT_BRACE{"LBRACE"};
+const std::string TOKEN_RIGHT_BRACE{"RBRACE"};
 
 const std::string TOKEN_ERROR{"ERROR"};
 
@@ -107,6 +110,7 @@ const std::string NODE_WHILE("WHILE");
 const std::string NODE_REPEAT("REPEAT");
 const std::string NODE_ALGODEF("ALGO");
 const std::string NODE_ALGOCALL("CALL");
+const std::string NODE_ARRAY("ARRAY");
 const std::string TAB{"    "};
 
 class Node {
@@ -114,8 +118,8 @@ public:
     virtual std::string get_node() = 0;
     virtual ~Node() {};
     virtual std::vector<std::shared_ptr<Node>> get_child() { return std::vector<std::shared_ptr<Node>>(0);}
-    virtual std::string get_type() {return "";}
-    virtual std::shared_ptr<Token> get_tok() = 0;
+    virtual std::string get_type() {return "NONE";}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual TokenList get_toks() { return TokenList(0);}
     virtual std::string get_name() {return "";}
 };
@@ -288,6 +292,19 @@ protected:
     NodeList args;
 };
 
+class ArrayNode: public Node {
+public:
+    ArrayNode(const NodeList &_elements_node)
+        : elements_node(_elements_node) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return elements_node;}
+    virtual std::string get_type() { return NODE_ARRAY;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+    virtual std::string get_name() { return "";}
+protected:
+    NodeList elements_node;
+};
+
 /// --------------------
 /// Value
 /// --------------------
@@ -298,6 +315,7 @@ const std::string VALUE_FLOAT{"Float"};
 const std::string VALUE_ALGO{"Algo"};
 const std::string VALUE_STRING{"Str"};
 const std::string VALUE_ERROR{"ERROR"};
+const std::string VALUE_ARRAY{"Array"};
 
 class SymbolTable;
 class Value {
@@ -340,6 +358,18 @@ protected:
     std::shared_ptr<Node> value;
 };
 
+class ArrayValue: public Value {
+public:
+    ArrayValue(ValueList _value) 
+        : Value(VALUE_ARRAY), value(_value) {}
+    virtual std::string get_num();
+    std::shared_ptr<Value> operator[](int p);
+    void push_back(std::shared_ptr<Value>);
+    std::shared_ptr<Value> pop_back();
+protected:
+    ValueList value;
+};
+
 std::shared_ptr<Value> operator+(std::shared_ptr<Value>, std::shared_ptr<Value>);
 std::shared_ptr<Value> operator-(std::shared_ptr<Value>, std::shared_ptr<Value>);
 std::shared_ptr<Value> operator*(std::shared_ptr<Value>, std::shared_ptr<Value>);
@@ -375,6 +405,7 @@ public:
     std::shared_ptr<Node> expr();
     std::shared_ptr<Node> arith_expr();
     std::shared_ptr<Node> comp_expr();
+    std::shared_ptr<Node> array_expr();
     std::shared_ptr<Node> if_expr();
     std::shared_ptr<Node> for_expr();
     std::shared_ptr<Node> while_expr();
@@ -404,7 +435,8 @@ const std::map<char, std::string> TO_TOKEN_TYPE {
     {'%', TOKEN_MOD}, {'(', TOKEN_LEFT_PAREN},
     {')', TOKEN_RIGHT_PAREN}, {'^', TOKEN_POW},
     {'=', TOKEN_EQUAL}, {',', TOKEN_COMMA},
-    {':', TOKEN_COLON}
+    {':', TOKEN_COLON}, {'{', TOKEN_LEFT_BRACE},
+    {'}', TOKEN_RIGHT_BRACE}
 };
 
 const std::set<std::string> KEYWORDS{
@@ -413,7 +445,7 @@ const std::set<std::string> KEYWORDS{
     "for", "to", "step", "while", "do",
     "repeat", "until",
     "if", "then", "else", 
-    "Algorithm"
+    "Algorithm", "continue", "break"
 };
 
 const std::map<char, char> ESCAPE_CHAR {
@@ -469,6 +501,7 @@ public:
     std::shared_ptr<Value> visit_var_assign(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_bin_op(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_unary_op(std::shared_ptr<Node>);
+    std::shared_ptr<Value> visit_array(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_if(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_for(std::shared_ptr<Node>);
     std::shared_ptr<Value> visit_while(std::shared_ptr<Node>);

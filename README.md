@@ -35,11 +35,14 @@ Let's make the pseudo code a actual programming language.
 - `atom :`
     - `INT|FLOAT|STRING|IDENTIFIER`
     - `LEFT_PAREN expr RIGHT_PAREN`
+    - `array-expr`
     - `if-expr`
     - `for-expr`
     - `while-expr`
     - `repeat-expr`
     - `algo-def`
+- `array-expr :`
+    - LEFT_BRACE (expr (COMMA expr)*)? RIGHT_BRACE
 - `if-expr :`
     - `if expr then expr (else (if-expr|expr))?`
 - `for-expr :`
@@ -108,7 +111,11 @@ Algorithm add(a, b):
 
 ### Int
 
+- A common 64 bit integer.
+
 ### Float
+
+- A common 64 bit floating point number.
 
 ### String
 
