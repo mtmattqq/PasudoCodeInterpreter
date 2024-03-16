@@ -1,21 +1,43 @@
 VPATH = src
-objects = color.o pseudo.o shell.o
+objects = color.o position.o token.o node.o parser.o lexer.o symboltable.o interpreter.o pseudo.o shell.o 
 flag = -std=c++11
 
 shell : $(objects)
 	g++ $(objects) -o shell
 
-shell.o : shell.cpp pseudo.o color.o
+shell.o : shell.cpp
 	g++ -c $(flag) shell.cpp
-
-pseudo.o : pseudo.h pseudo.cpp color.o
-	g++ -c $(flag) src/pseudo.cpp
 
 color.o : color.h color.cpp
 	g++ -c $(flag) src/color.cpp
 
+position.o : position.h position.cpp
+	g++ -c $(flag) src/position.cpp
+
+token.o : token.h token.cpp
+	g++ -c $(flag) src/token.cpp
+
+node.o : node.h node.cpp
+	g++ -c $(flag) src/node.cpp
+
+parser.o : parser.h parser.cpp
+	g++ -c $(flag) src/parser.cpp
+
+lexer.o : lexer.h lexer.cpp
+	g++ -c $(flag) src/lexer.cpp
+
+symboltable.o : symboltable.h symboltable.cpp
+	g++ -c $(flag) src/symboltable.cpp
+
+interpreter.o : interpreter.h interpreter.cpp
+	g++ -c $(flag) src/interpreter.cpp
+
+pseudo.o : pseudo.h pseudo.cpp color.o position.o token.o node.o parser.o lexer.o symboltable.o interpreter.o
+	g++ -c $(flag) src/pseudo.cpp
+
 clean : 
 	rm -f *.o
+	rm -f shell
 
 run :
 	make
