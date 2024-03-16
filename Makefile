@@ -1,6 +1,6 @@
 VPATH = src
 objects = color.o position.o token.o node.o parser.o lexer.o symboltable.o interpreter.o pseudo.o shell.o 
-flag = -std=c++11
+flag = -std=c++11 -g
 
 shell : $(objects)
 	g++ $(objects) -o shell

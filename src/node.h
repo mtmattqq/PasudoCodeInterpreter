@@ -201,6 +201,7 @@ public:
     virtual std::string get_type() { return NODE_ALGOCALL;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual std::string get_name() { return call_node->get_name();}
+    std::shared_ptr<Node> get_call() { return call_node;}
 protected:
     std::shared_ptr<Node> call_node;
     NodeList args;

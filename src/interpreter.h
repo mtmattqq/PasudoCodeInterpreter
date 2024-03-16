@@ -35,7 +35,7 @@ public:
     std::shared_ptr<Value> unary_op(std::shared_ptr<Value>, std::shared_ptr<Token>);
 protected:
     SymbolTable &symbol_table;
-    std::shared_ptr<Value> error;
+    std::shared_ptr<Value> error, algo_call_temp;
 };
 
 #endif

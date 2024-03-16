@@ -113,9 +113,11 @@ std::shared_ptr<Value>& Interpreter::visit_array_access(std::shared_ptr<Node> no
         error = std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array\n");
         return error;
     }
+    algo_call_temp = arr;
     return dynamic_cast<ArrayValue*>(arr.get())->operator[](std::stoll(index->get_num()));
 }
-#include <iostream>
+
+
 std::shared_ptr<Value> Interpreter::visit_array_assign(std::shared_ptr<Node> node) {
     NodeList child{node->get_child()};
     if(child[0]->get_type() != NODE_ARRACCESS) {
@@ -202,9 +204,14 @@ std::shared_ptr<Value> Interpreter::visit_algo_def(std::shared_ptr<Node> node) {
 }
 
 std::shared_ptr<Value> Interpreter::visit_algo_call(std::shared_ptr<Node> node) {
+    AlgorithmCallNode *algo_call_node = dynamic_cast<AlgorithmCallNode*>(node.get());
     NodeList child = node->get_child();
-    std::string algo_name = node->get_name();
-    std::shared_ptr<Value> algo = symbol_table.get(algo_name);
+    std::shared_ptr<Node> algo_node = algo_call_node->get_call();
+    std::shared_ptr<Value> algo;
+    if(algo_node->get_type() == NODE_VARACCESS)
+        algo = symbol_table.get(algo_call_node->get_name());
+    else
+        algo = visit(algo_node);
     return algo->execute(child, &symbol_table);
 }
 
