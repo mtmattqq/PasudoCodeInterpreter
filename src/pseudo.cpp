@@ -51,10 +51,12 @@ std::shared_ptr<Value> ArrayValue::pop_back() {
     return value.back();
 }
 
-std::shared_ptr<Value> ArrayValue::operator[](int p) {
+std::shared_ptr<Value>& ArrayValue::operator[](int p) {
     if(1 <= p && p <= value.size())
         return value[p - 1];
-    return std::make_shared<ErrorValue>(VALUE_ERROR, "Index out of range");
+    error = std::make_shared<ErrorValue>(
+        VALUE_ERROR, "Index out of range, size: " + std::to_string(value.size()) + ", position: " + std::to_string(p));
+    return error;
 }
 
 std::shared_ptr<Value> BaseAlgoValue::set_args(NodeList &args, SymbolTable &sym, Interpreter &interpreter) {
@@ -359,7 +361,7 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
 
     Parser parser(tokens);
     std::shared_ptr<Node> ast = parser.parse();
-    if(ast->get_type() == NODE_ERROR)
+    // if(ast->get_type() == NODE_ERROR)
         std::cout << "Nodes: " << ast->get_node() << "\n";
     if(ast->get_type() == NODE_ERROR) return "ABORT";
 

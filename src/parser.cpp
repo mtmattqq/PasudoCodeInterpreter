@@ -4,7 +4,7 @@
 
 #include "parser.h"
 #include "color.h"
-#include "pseudo.h"
+#include "lexer.h"
 #include <string>
 #include <algorithm>
 
@@ -40,8 +40,17 @@ std::shared_ptr<Node> Parser::atom() {
             advance();
             return e;
         }
+        error_msg += "Expected \')\'" RESET "\n";
+        std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
+        return std::make_shared<ErrorNode>(error_token);
     } else if(tok->get_type() == TOKEN_IDENTIFIER) {
         advance();
+        if(current_tok->get_type() == TOKEN_ASSIGN) {
+            advance();
+            std::shared_ptr<Node> ret = expr();
+            if(ret->get_type() == NODE_ERROR) return ret;
+            return std::make_shared<VarAssignNode>(tok->get_value(), ret);
+        }
         return std::make_shared<VarAccessNode>(tok);
     } else if(tok->get_type() == TOKEN_KEYWORD && tok->get_value() == "if") {
         advance();
@@ -63,7 +72,7 @@ std::shared_ptr<Node> Parser::atom() {
         return array_expr();
     }
 
-    error_msg += "\"\n" RESET;
+    error_msg += "\"" RESET "\n" ;
     std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
     return std::make_shared<ErrorNode>(error_token);
 }
@@ -82,25 +91,6 @@ std::shared_ptr<Node> Parser::term() {
 }
 
 std::shared_ptr<Node> Parser::expr() {
-    if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "var") {
-        advance();
-        if(current_tok->get_type() != TOKEN_IDENTIFIER) {
-            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected Identifier\n" RESET;
-            std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
-            return std::make_shared<ErrorNode>(error_token);
-        }
-        std::string var_name = current_tok->get_value();
-        advance();
-        if(current_tok->get_type() != TOKEN_ASSIGN) {
-            std::string error_msg = Color(0xFF, 0x39, 0x6E).get() + "Expected \"<-\"\n" RESET;
-            std::shared_ptr<Token> error_token = std::make_shared<ErrorToken>(TOKEN_ERROR, current_tok->get_pos(), error_msg);
-            return std::make_shared<ErrorNode>(error_token);
-        }
-        advance();
-        std::shared_ptr<Node> ret = expr();
-        if(ret->get_type() == NODE_ERROR) return ret;
-        return std::make_shared<VarAssignNode>(var_name, ret);
-    }
     return bin_op(std::bind(&Parser::comp_expr, this), {"and", "or"}, std::bind(&Parser::comp_expr, this));
 }
 
@@ -321,6 +311,7 @@ std::shared_ptr<Node> Parser::call() {
             }
             advance();
             ret = std::make_shared<AlgorithmCallNode>(at, args);
+            at = ret;
         }
         while(current_tok->get_type() == TOKEN_LEFT_SQUARE) {
             advance();
@@ -335,6 +326,12 @@ std::shared_ptr<Node> Parser::call() {
             ret = std::make_shared<ArrayAccessNode>(at, index);
             at = ret;
         }
+    }
+    if(current_tok->get_type() == TOKEN_ASSIGN) {
+        advance();
+        std::shared_ptr<Node> val = expr();
+        if(val->get_type() == NODE_ERROR) return val;
+        return std::make_shared<ArrayAssignNode>(ret, val);
     }
     return ret;
 }

@@ -47,6 +47,9 @@ std::shared_ptr<Value> Interpreter::visit(std::shared_ptr<Node> node) {
     if(node->get_type() == NODE_ARRACCESS) {
         return visit_array_access(node);
     }
+    if(node->get_type() == NODE_ARRASSIGN) {
+        return visit_array_assign(node);
+    }
     return std::make_shared<ErrorValue>(VALUE_ERROR, "Fail to get result\n");
 }
 
@@ -103,13 +106,23 @@ std::shared_ptr<Value> Interpreter::visit_array(std::shared_ptr<Node> node) {
     return std::make_shared<ArrayValue>(array_value);
 }
 
-std::shared_ptr<Value> Interpreter::visit_array_access(std::shared_ptr<Node> node) {
+std::shared_ptr<Value>& Interpreter::visit_array_access(std::shared_ptr<Node> node) {
     NodeList child{node->get_child()};
     std::shared_ptr<Value> arr{visit(child[0])}, index{visit(child[1])};
     if(arr->get_type() != VALUE_ARRAY) {
-        return std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array\n");
+        error = std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array\n");
+        return error;
     }
     return dynamic_cast<ArrayValue*>(arr.get())->operator[](std::stoll(index->get_num()));
+}
+#include <iostream>
+std::shared_ptr<Value> Interpreter::visit_array_assign(std::shared_ptr<Node> node) {
+    NodeList child{node->get_child()};
+    if(child[0]->get_type() != NODE_ARRACCESS) {
+        return std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array\n");
+    }
+    std::shared_ptr<Value> &arr{visit_array_access(child[0])}, value{visit(child[1])};
+    return arr = value;
 }
 
 std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {

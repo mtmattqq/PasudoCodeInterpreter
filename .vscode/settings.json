@@ -50,6 +50,7 @@
         "map": "cpp",
         "set": "cpp",
         "chrono": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "valarray": "cpp"
     }
 }

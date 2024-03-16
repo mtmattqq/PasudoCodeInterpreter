@@ -148,3 +148,11 @@ std::string ArrayAccessNode::get_node() {
     std::getline(ss, ret);
     return ret;
 }
+
+std::string ArrayAssignNode::get_node() {
+    std::stringstream ss;
+    ss << arr->get_node() << " <- " << value->get_node();
+    std::string ret;
+    std::getline(ss, ret);
+    return ret;
+}

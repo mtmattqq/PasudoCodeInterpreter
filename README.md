@@ -39,7 +39,7 @@ Let's make the pseudo code a actual programming language.
 
 ### Operators and Operations
 
-- `var a <- 10` : move the value 10 to the variable `a`
+- `a <- 10` : move the value 10 to the variable `a`
 - `+` : addition 
 - `-` : subtraction
 - `*` : multiplication
@@ -102,7 +102,6 @@ Algorithm add(a, b):
 ### Expression Rule
 
 - `expr :`
-    - `var IDENTIFIER ASSIGN expr`
     - `comp-expr ((and|or) comp-expr)*`
 - `comp-expr :`
     - `not comp-expr`
@@ -120,7 +119,8 @@ Algorithm add(a, b):
     - `atom (LEFT_PAREN expr (COMMA expr)* RIGHT_PAREN)?`
     - `array-access`
 - `atom :`
-    - `INT|FLOAT|STRING|IDENTIFIER`
+    - `INT|FLOAT|STRING`
+    - `IDENTIFIER (ASSIGN expr)?`
     - `LEFT_PAREN expr RIGHT_PAREN`
     - `array-expr`
     - `if-expr`

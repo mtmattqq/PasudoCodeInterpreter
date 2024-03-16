@@ -90,11 +90,12 @@ public:
     ArrayValue(ValueList _value) 
         : Value(VALUE_ARRAY), value(_value) {}
     virtual std::string get_num();
-    std::shared_ptr<Value> operator[](int p);
+    std::shared_ptr<Value>& operator[](int p);
     void push_back(std::shared_ptr<Value>);
     std::shared_ptr<Value> pop_back();
 protected:
     ValueList value;
+    std::shared_ptr<Value> error;
 };
 
 std::shared_ptr<Value> operator+(std::shared_ptr<Value>, std::shared_ptr<Value>);

@@ -24,6 +24,7 @@ const std::string NODE_ALGODEF("ALGO");
 const std::string NODE_ALGOCALL("CALL");
 const std::string NODE_ARRAY("ARRAY");
 const std::string NODE_ARRACCESS("ARRACCESS");
+const std::string NODE_ARRASSIGN("ARRASSIGN");
 const std::string TAB{"    "};
 
 class Node {
@@ -228,6 +229,18 @@ public:
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
 protected:
     std::shared_ptr<Node> arr, index;
+};
+
+class ArrayAssignNode: public Node {
+public:
+    ArrayAssignNode(std::shared_ptr<Node> _arr, std::shared_ptr<Node> _value)
+        : arr(_arr), value(_value) {}
+    virtual std::string get_node();
+    virtual NodeList get_child() { return NodeList{arr, value};}
+    virtual std::string get_type() { return NODE_ARRASSIGN;}
+    virtual std::shared_ptr<Token> get_tok() { return nullptr;}
+protected:
+    std::shared_ptr<Node> arr, value;
 };
 
 #endif

@@ -14,22 +14,22 @@ color.o : color.h color.cpp
 position.o : position.h position.cpp
 	g++ -c $(flag) src/position.cpp
 
-token.o : token.h token.cpp
+token.o : token.h token.cpp color.o position.o
 	g++ -c $(flag) src/token.cpp
 
-node.o : node.h node.cpp
+node.o : node.h node.cpp token.o
 	g++ -c $(flag) src/node.cpp
 
-parser.o : parser.h parser.cpp
+parser.o : parser.h parser.cpp lexer.o
 	g++ -c $(flag) src/parser.cpp
 
-lexer.o : lexer.h lexer.cpp
+lexer.o : lexer.h lexer.cpp color.h
 	g++ -c $(flag) src/lexer.cpp
 
-symboltable.o : symboltable.h symboltable.cpp
+symboltable.o : symboltable.h symboltable.cpp color.o node.o value.h
 	g++ -c $(flag) src/symboltable.cpp
 
-interpreter.o : interpreter.h interpreter.cpp
+interpreter.o : interpreter.h interpreter.cpp value.h
 	g++ -c $(flag) src/interpreter.cpp
 
 pseudo.o : pseudo.h pseudo.cpp color.o position.o token.o node.o parser.o lexer.o symboltable.o interpreter.o
