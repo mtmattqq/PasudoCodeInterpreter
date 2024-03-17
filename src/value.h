@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 #include "node.h"
 
 const std::string VALUE_NONE{"NONE"};
@@ -18,6 +19,13 @@ const std::string VALUE_STRING{"Str"};
 const std::string VALUE_ERROR{"ERROR"};
 const std::string VALUE_ARRAY{"Array"};
 
+const std::map<char, char> REVERSE_ESCAPE_CHAR {
+    {'\n', 'n'}, {'\r', 'r'},
+    {'\b', 'b'}, {'\"', '\"'},
+    {'\'', '\''}, {'\\', '\\'},
+    {'\t', 't'}
+};
+
 class SymbolTable;
 class Interpreter;
 class Value {
@@ -25,6 +33,7 @@ public:
     Value(const std::string& _type = VALUE_NONE)
         : type(_type) {}
     virtual std::string get_num() { return type;}
+    virtual std::string repr() { return type;}
     virtual std::string get_type(){ return type;}
     virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr)
         { return std::make_shared<Value>();};
@@ -42,6 +51,7 @@ public:
     TypedValue(const std::string& _type, const T &_value) 
         : Value(_type), value(_value) {}
     virtual std::string get_num();
+    virtual std::string repr();
 
 protected:
     T value;
@@ -55,6 +65,8 @@ public:
         : Value(VALUE_ALGO), value(_value), algo_name(_algo_name) {}
     virtual std::string get_num() { return algo_name;}
     virtual std::shared_ptr<Value> set_args(NodeList&, SymbolTable&, Interpreter&);
+    virtual std::string repr() { return get_num();}
+
 protected:
     std::string algo_name;
     std::shared_ptr<Node> value;
@@ -65,6 +77,7 @@ public:
     AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : BaseAlgoValue(_algo_name, _value) {}
     virtual std::string get_num() { return algo_name;}
+    virtual std::string repr() { return get_num();}
     virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
 protected:
 };
@@ -82,6 +95,7 @@ public:
     std::shared_ptr<Value> execute_int(const std::string&);
     std::shared_ptr<Value> execute_float(const std::string&);
     std::shared_ptr<Value> execute_string(const std::string&);
+    virtual std::string repr() { return get_num();}
 protected:
 };
 
@@ -93,6 +107,9 @@ public:
     std::shared_ptr<Value>& operator[](int p);
     void push_back(std::shared_ptr<Value>);
     std::shared_ptr<Value> pop_back();
+    std::shared_ptr<Value>& back() { return value.back();};
+    virtual std::string repr() { return get_num();}
+
 protected:
     ValueList value;
     std::shared_ptr<Value> error;

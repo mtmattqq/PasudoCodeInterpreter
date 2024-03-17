@@ -133,9 +133,14 @@ std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
     if(cond->get_type() == VALUE_ERROR)
         return cond;
     if(std::stoll(cond->get_num()) == 1) {
+        std::shared_ptr<Value> ret;
+        for(int i{2}; i < child.size(); ++i) {
+            ret = visit(child[i]);
+            if(ret->get_type() == VALUE_ERROR)
+                return ret;
+        }
+    } else if(child[1] != nullptr) {
         return visit(child[1]);
-    } else if(child[2] != nullptr) {
-        return visit(child[2]);
     }
     return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
 }
@@ -165,9 +170,17 @@ std::shared_ptr<Value> Interpreter::visit_for(std::shared_ptr<Node> node) {
 
     ValueList ret;
     while(condition(i, end_value)) {
-        ret.push_back(visit(child[3]));
-        if(ret.back()->get_type() == VALUE_ERROR) 
-            return ret.back();
+        if(child.size() == 4) {
+            ret.push_back(visit(child[3]));
+            if(ret.back()->get_type() == VALUE_ERROR) 
+                return ret.back();
+        }
+
+        for(int index{3}; index < child.size(); ++index) {
+            std::shared_ptr<Value> ret{visit(child[index])};
+            if(ret->get_type() == VALUE_ERROR) 
+                return ret;
+        }
         symbol_table.set(child[0]->get_name(), i + step);
         i = symbol_table.get(child[0]->get_name());
     }
@@ -178,9 +191,16 @@ std::shared_ptr<Value> Interpreter::visit_while(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
     ValueList ret;
     while(std::stoll(visit(child[0])->get_num()) == 1) {
-        ret.push_back(visit(child[1]));
-        if(ret.back()->get_type() == VALUE_ERROR) 
-            return ret.back();
+        if(child.size() == 2) {
+            ret.push_back(visit(child[1]));
+            if(ret.back()->get_type() == VALUE_ERROR) 
+                return ret.back();
+        }
+        for(int index{1}; index < child.size(); ++index) {
+            std::shared_ptr<Value> ret{visit(child[index])};
+            if(ret->get_type() == VALUE_ERROR) 
+                return ret;
+        }
     }
     return std::make_shared<ArrayValue>(ret);
 }
@@ -189,10 +209,17 @@ std::shared_ptr<Value> Interpreter::visit_repeat(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
     ValueList ret;
     do {
-        ret.push_back(visit(child[0]));
-        if(ret.back()->get_type() == VALUE_ERROR) 
-            return ret.back();
-    } while(std::stoll(visit(child[1])->get_num()) == 0);
+        if(child.size() == 2) {
+            ret.push_back(visit(child[1]));
+            if(ret.back()->get_type() == VALUE_ERROR) 
+                return ret.back();
+        }
+        for(int index{1}; index < child.size(); ++index) {
+            std::shared_ptr<Value> ret{visit(child[index])};
+            if(ret->get_type() == VALUE_ERROR) 
+                return ret;
+        }
+    } while(std::stoll(visit(child[0])->get_num()) == 0);
     return std::make_shared<ArrayValue>(ret);
 }
 

@@ -21,18 +21,51 @@ std::ostream& operator<<(std::ostream &out, Value &number) {
 template<typename T>
 std::string TypedValue<T>::get_num() {
     std::stringstream ss;
-    ss << value;
     std::string ret;
-    std::getline(ss, ret);
+    if(type == VALUE_FLOAT || type == VALUE_INT) {
+        ss << value;
+        std::getline(ss, ret);
+    } else if(type == VALUE_STRING) {
+        ss << value;
+        std::string line;
+        while(std::getline(ss, ret)) {
+            ret += line + "\n";
+        }
+    }
+    return ret;
+}
+
+template<typename T>
+std::string TypedValue<T>::repr() {
+    std::stringstream ss;
+    std::string ret;
+    if(type == VALUE_FLOAT || type == VALUE_INT) {
+        ret = get_num();
+    } else if(type == VALUE_STRING) {
+        ss << value;
+
+        char ch{char(ss.get())};
+        ret += '\"';
+        while(!ss.eof()) {
+            if(REVERSE_ESCAPE_CHAR.count(ch)) {
+                ret += '\\';
+                ret += REVERSE_ESCAPE_CHAR.at(ch);
+            } else {
+                ret += ch;
+            }
+            ch = ss.get();
+        }
+        ret += '\"';
+    }
     return ret;
 }
 
 std::string ArrayValue::get_num() {
     std::stringstream ss;
     ss << "{";
-    if(!value.empty()) ss << value[0]->get_num();
+    if(!value.empty()) ss << value[0]->repr();
     for(int i{1}; i < value.size(); ++i) {
-        ss << ", " << value[i]->get_num();
+        ss << ", " << value[i]->repr();
     }
     ss << "}";
     std::string ret;
@@ -119,7 +152,7 @@ std::shared_ptr<Value> BuiltinAlgoValue::execute(NodeList args, SymbolTable *par
 }
 
 std::shared_ptr<Value> BuiltinAlgoValue::execute_print(const std::string &str) {
-    std::cout << str;
+    std::cout << str << "\n";
     return std::make_shared<Value>();
 }
 
@@ -356,19 +389,31 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    if(tokens[0]->get_type() == TOKEN_ERROR)
+    // if(tokens[0]->get_type() == TOKEN_ERROR)
         std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
-    std::shared_ptr<Node> ast = parser.parse();
-    // if(ast->get_type() == NODE_ERROR)
-        std::cout << "Nodes: " << ast->get_node() << "\n";
-    if(ast->get_type() == NODE_ERROR) return "ABORT";
+    NodeList ast = parser.parse();
+    
+    for(auto node : ast) {
+        // if(ast->get_type() == NODE_ERROR)
+            std::cout << "Nodes: " << node->get_node() << "\n";
+        if(node->get_type() == NODE_ERROR) return "ABORT";
+    }
 
     Interpreter interpreter(global_symbol_table);
-    std::shared_ptr<Value> ret = interpreter.visit(ast);
-    if(ret->get_type() != VALUE_NONE)
+    ArrayValue *ret{new ArrayValue(ValueList(0))};
+    for(auto node : ast) {
+        ret->push_back(interpreter.visit(node));
+        if(ret->back()->get_type() == VALUE_ERROR) return "ABORT";
+    }
+
+    while(ret->get_type() == VALUE_ARRAY && ret->back()->get_type() == VALUE_ARRAY) {
+        ret = dynamic_cast<ArrayValue*>(ret->back().get());
+    }
+    
+    if(file_name == "stdin" && ret->operator[](0)->get_type() != VALUE_NONE) {
         std::cout << ret->get_num() << "\n";
-    if(ret->get_type() == VALUE_ERROR) return "ABORT";
+    }
     return "";
 }

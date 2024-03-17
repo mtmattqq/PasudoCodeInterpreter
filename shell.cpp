@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <chrono>
 #include "src/pseudo.h"
@@ -20,11 +21,21 @@ void RunShell(std::string file_name) {
     }
 }
 
+void RunCode(std::string file_name, char *args[]) {
+    std::ifstream input(file_name);
+    std::string code, line;
+    while(std::getline(input, line)) {
+        code += line + "\n";
+    }
+    SymbolTable global_symbol_table;
+    Run(file_name, code, global_symbol_table);
+}
+
 int main(int argc, char *args[]) {
     if(argc == 1) {
         RunShell("stdin");
     } else {
-        RunShell(args[1]);
+        RunCode(args[1], args + 1);
     }
     return 0;
 }

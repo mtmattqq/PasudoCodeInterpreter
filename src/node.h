@@ -123,57 +123,77 @@ protected:
 
 class IfNode: public Node {
 public:
-    IfNode(std::shared_ptr<Node> condition, std::shared_ptr<Node> expr, std::shared_ptr<Node> _else_node)
+    IfNode(std::shared_ptr<Node> condition, NodeList expr, std::shared_ptr<Node> _else_node)
         : condition_node(condition), expr_node(expr), else_node(_else_node) {}
     // virtual ~IfNode() {}
     virtual std::string get_node();
-    virtual NodeList get_child() { return NodeList{condition_node, expr_node, else_node};}
+    virtual NodeList get_child() {
+        NodeList child{condition_node, else_node};
+        for(auto node : expr_node) child.push_back(node);
+        return child;
+    }
     virtual std::string get_type() { return NODE_IF;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual std::string get_name() { return "";}
 protected:
-    std::shared_ptr<Node> condition_node, expr_node, else_node;
+    std::shared_ptr<Node> condition_node, else_node; 
+    NodeList expr_node;
 };
 
 class ForNode: public Node {
 public:
     ForNode(
         std::shared_ptr<Node> _var_assign, std::shared_ptr<Node> _end_value,
-        std::shared_ptr<Node> _step_value, std::shared_ptr<Node> _body_node
+        std::shared_ptr<Node> _step_value, NodeList _body_node
     )   : var_assign(_var_assign), end_value(_end_value), step_value(_step_value), body_node(_body_node) {}
     virtual std::string get_node();
-    virtual NodeList get_child() { return NodeList{var_assign, end_value, step_value, body_node};}
+    virtual NodeList get_child() {
+        NodeList child{var_assign, end_value, step_value};
+        for(auto node : body_node) child.push_back(node);
+        return child;
+    }
     virtual std::string get_type() { return NODE_FOR;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual std::string get_name() { return "";}
 protected:
-    std::shared_ptr<Node> var_assign, end_value, step_value, body_node;
+    std::shared_ptr<Node> var_assign, end_value, step_value;
+    NodeList body_node;
 };
 
 class WhileNode: public Node {
 public:
-    WhileNode(std::shared_ptr<Node> _condition, std::shared_ptr<Node> _body_node)
+    WhileNode(std::shared_ptr<Node> _condition, NodeList _body_node)
         : condition(_condition), body_node(_body_node) {}
     virtual std::string get_node();
-    virtual NodeList get_child() { return NodeList{condition, body_node};}
+    virtual NodeList get_child() {
+        NodeList child{condition};
+        for(auto node : body_node) child.push_back(node);
+        return child;
+    }
     virtual std::string get_type() { return NODE_WHILE;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual std::string get_name() { return "";}
 protected:
-    std::shared_ptr<Node> condition, body_node;
+    std::shared_ptr<Node> condition;
+    NodeList body_node;
 };
 
 class RepeatNode: public Node {
 public:
-    RepeatNode(std::shared_ptr<Node> _body_node, std::shared_ptr<Node> _condition)
+    RepeatNode(NodeList _body_node, std::shared_ptr<Node> _condition)
         : condition(_condition), body_node(_body_node) {}
     virtual std::string get_node();
-    virtual NodeList get_child() { return NodeList{body_node,condition};}
+    virtual NodeList get_child() {
+        NodeList child{condition};
+        for(auto node : body_node) child.push_back(node);
+        return child;
+    }
     virtual std::string get_type() { return NODE_REPEAT;}
     virtual std::shared_ptr<Token> get_tok() { return nullptr;}
     virtual std::string get_name() { return "";}
 protected:
-    std::shared_ptr<Node> condition, body_node;
+    std::shared_ptr<Node> condition;
+    NodeList body_node;
 };
 
 class AlgorithmDefNode: public Node {

@@ -10,6 +10,7 @@
 #include "token.h"
 
 #define NONE 0
+#define TAB_SIZE 4
 
 const std::map<char, std::string> TO_TOKEN_TYPE {
     {'+', TOKEN_ADD}, {'-', TOKEN_SUB}, 
@@ -19,11 +20,11 @@ const std::map<char, std::string> TO_TOKEN_TYPE {
     {'=', TOKEN_EQUAL}, {',', TOKEN_COMMA},
     {':', TOKEN_COLON}, {'{', TOKEN_LEFT_BRACE},
     {'}', TOKEN_RIGHT_BRACE}, {'[', TOKEN_LEFT_SQUARE},
-    {']', TOKEN_RIGHT_SQUARE}
+    {']', TOKEN_RIGHT_SQUARE}, {'\n', TOKEN_NEWLINE},
+    {';', TOKEN_SEMICOLON}, {'.', TOKEN_DOT}
 };
 
 const std::set<std::string> KEYWORDS{
-    "var", 
     "and", "or", "not",
     "for", "to", "step", "while", "do",
     "repeat", "until",

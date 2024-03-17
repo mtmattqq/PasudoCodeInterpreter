@@ -16,25 +16,28 @@ public:
     Parser(const TokenList& _tokens)
         : tokens(_tokens), tok_index(-1) { advance();}
     std::shared_ptr<Token> advance();
-    std::shared_ptr<Node> factor();
-    std::shared_ptr<Node> term();
-    std::shared_ptr<Node> expr();
-    std::shared_ptr<Node> arith_expr();
-    std::shared_ptr<Node> comp_expr();
-    std::shared_ptr<Node> array_expr();
-    std::shared_ptr<Node> if_expr();
-    std::shared_ptr<Node> for_expr();
-    std::shared_ptr<Node> while_expr();
-    std::shared_ptr<Node> repeat_expr();
-    std::shared_ptr<Node> pow();
-    std::shared_ptr<Node> atom();
-    std::shared_ptr<Node> call();
-    std::shared_ptr<Node> algo_def();
+    std::shared_ptr<Token> back();
+    std::shared_ptr<Node> factor(int tab_expect);
+    std::shared_ptr<Node> term(int tab_expect);
+    std::shared_ptr<Node> expr(int tab_expect);
+    std::shared_ptr<Node> arith_expr(int tab_expect);
+    std::shared_ptr<Node> comp_expr(int tab_expect);
+    std::shared_ptr<Node> array_expr(int tab_expect);
+    std::shared_ptr<Node> if_expr(int tab_expect);
+    std::shared_ptr<Node> for_expr(int tab_expect);
+    std::shared_ptr<Node> while_expr(int tab_expect);
+    std::shared_ptr<Node> repeat_expr(int tab_expect);
+    std::shared_ptr<Node> pow(int tab_expect);
+    std::shared_ptr<Node> atom(int tab_expect);
+    std::shared_ptr<Node> call(int tab_expect);
+    std::shared_ptr<Node> algo_def(int tab_expect);
+    NodeList statement(int tab_expect);
     
     std::shared_ptr<Node> bin_op(
-        std::function<std::shared_ptr<Node>()>, 
-        std::vector<std::string>, std::function<std::shared_ptr<Node>()>);
-    std::shared_ptr<Node> parse();
+        int tab_expect,
+        std::function<std::shared_ptr<Node>(int)>, 
+        std::vector<std::string>, std::function<std::shared_ptr<Node>(int)>);
+    NodeList parse();
 protected:
     TokenList tokens;
     std::shared_ptr<Token> current_tok;

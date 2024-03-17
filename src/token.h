@@ -49,10 +49,15 @@ const std::string TOKEN_RIGHT_SQUARE{"RSQUARE"};
 const std::string TOKEN_DOT{"DOT"};
 // Error
 const std::string TOKEN_ERROR{"ERROR"};
+// Multiline
+const std::string TOKEN_NEWLINE{"NEWL"};
+const std::string TOKEN_SEMICOLON{"SEMIC"};
+const std::string TOKEN_TAB{"TAB"};
+const std::string TOKEN_NONE{"NONE"};
 
 class Token {
 public:
-    Token(const std::string& _type = "", Position _pos = Position())
+    Token(const std::string& _type = TOKEN_NONE, Position _pos = Position())
         : type(_type), pos(_pos) {}
     virtual std::string get_tok();
     virtual std::string get_type();

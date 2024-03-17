@@ -37,13 +37,34 @@ TokenList Lexer::make_tokens() {
             tokens.push_back(new_token);
             continue;
         }
+        if(current_char == '\n') {
+            tokens.push_back(std::make_shared<Token>(TO_TOKEN_TYPE.at(current_char), pos));
+            advance();
+            int space_num{0};
+            while(current_char == ' ') {
+                space_num++;
+                advance();
+            }
+            if(space_num % TAB_SIZE != 0) {
+                tokens.clear();
+                std::string error_msg = "Illegal tab size: ";
+                error_msg += std::to_string(space_num);
+                error_msg += ". At " + pos.get_pos() + RESET + "\n Tab Size should be 4n" + "\n";
+                tokens.push_back(std::make_shared<ErrorToken>(TOKEN_ERROR, pos, error_msg));
+                return tokens;
+            }
+            for(int i{0}; i < (space_num >> 2); ++i) {
+                tokens.push_back(std::make_shared<Token>(TOKEN_TAB, pos));
+            }
+            continue;
+        }
 
         switch(current_char) {
-            case ' ': case '\t': case '\n':
+            case ' ': case '\t': 
             advance(); break;
             
             case '+': case '-': case '*': case '/': case '%': case '^': case '(': case ')':
-            case '=': case ',': case ':': case '{': case '}': case '[': case ']':
+            case '=': case ',': case ':': case '{': case '}': case '[': case ']': case ';':
             tokens.push_back(std::make_shared<Token>(TO_TOKEN_TYPE.at(current_char), pos));
             advance(); break;
             case '<':
@@ -79,7 +100,7 @@ TokenList Lexer::make_tokens() {
             tokens.clear();
             std::string error_msg = "Illegal char \'";
             error_msg += current_char;
-            error_msg += "\'. At " + pos.get_pos() + "\n";
+            error_msg += "\'. At " + pos.get_pos() + RESET + "\n";
             tokens.push_back(std::make_shared<ErrorToken>(TOKEN_ERROR, pos, error_msg));
             return tokens;
         }

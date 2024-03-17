@@ -101,6 +101,10 @@ Algorithm add(a, b):
 
 ### Expression Rule
 
+- `statement :`
+    - NEWLINE* expr (NEWLINE (TAB)_correct_amount expr)* NEWLINE
+    - SEMICOLON* expr (SEMICOLON expr)* SEMICOLON
+
 - `expr :`
     - `comp-expr ((and|or) comp-expr)*`
 - `comp-expr :`

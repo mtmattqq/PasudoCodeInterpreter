@@ -51,6 +51,7 @@
         "set": "cpp",
         "chrono": "cpp",
         "ratio": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "fstream": "cpp"
     }
 }

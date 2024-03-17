@@ -53,7 +53,9 @@ std::string VarAccessNode::get_node() {
 
 std::string IfNode::get_node() {
     std::stringstream ss;
-    ss << "(IF " << condition_node->get_node() << " THEN " << expr_node->get_node();
+    ss << "(IF " << condition_node->get_node() << " THEN ";
+    for(auto node : expr_node)
+        ss << node->get_node() << "; ";
     if(else_node != nullptr)
         ss << " ELSE " << else_node->get_node();
     ss << ")";
@@ -67,7 +69,9 @@ std::string ForNode::get_node() {
     ss << "(FOR " << var_assign->get_node() << " TO " << end_value->get_node();
     if(step_value != nullptr)
         ss << " STEP " << step_value->get_node();
-    ss << " DO " << body_node->get_node();
+    ss << " DO ";
+    for(auto node : body_node)
+        ss << node->get_node() << "; ";
     ss << ")";
     std::string ret;
     std::getline(ss, ret);
@@ -76,7 +80,10 @@ std::string ForNode::get_node() {
 
 std::string WhileNode::get_node() {
     std::stringstream ss;
-    ss << "(WHILE " << condition->get_node() << " DO " << body_node->get_node() << ")";
+    ss << "(WHILE " << condition->get_node() << " DO ";
+    for(auto node : body_node)
+        ss << node->get_node() << "; ";
+    ss << ")";
     std::string ret;
     std::getline(ss, ret);
     return ret;
@@ -84,7 +91,10 @@ std::string WhileNode::get_node() {
 
 std::string RepeatNode::get_node() {
     std::stringstream ss;
-    ss << "(REPEAT " << body_node->get_node() << " UNTIL " << condition->get_node() << ")";
+    ss << "(REPEAT ";
+    for(auto node : body_node)
+        ss << node->get_node() << "; ";
+    ss << " UNTIL " << condition->get_node() << ")";
     std::string ret;
     std::getline(ss, ret);
     return ret;
