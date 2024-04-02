@@ -139,6 +139,7 @@ std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
             if(ret->get_type() == VALUE_ERROR)
                 return ret;
         }
+        return ret;
     } else if(child[1] != nullptr) {
         return visit(child[1]);
     }

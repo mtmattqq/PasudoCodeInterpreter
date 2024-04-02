@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "color.h"
 #include "lexer.h"
+#include "token.h"
 #include <string>
 #include <algorithm>
 
@@ -169,6 +170,12 @@ std::shared_ptr<Node> Parser::if_expr(int tab_expect) {
     for(auto node : exp)
         if(node->get_type() == NODE_ERROR) return node;
     std::shared_ptr<Node> els = nullptr;
+    if(current_tok->get_type() == TOKEN_NEWLINE) {
+        advance();
+        while(current_tok->get_type() == TOKEN_TAB) {
+            advance();
+        }
+    }
     if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "else") {
         advance();
         if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "if") {
@@ -402,7 +409,6 @@ NodeList Parser::statement(int tab_expect) {
                     while(current_tok->get_type() != TOKEN_NEWLINE) {
                         back();
                     }
-                    advance();
                     return ret;
                 }
                 advance();
