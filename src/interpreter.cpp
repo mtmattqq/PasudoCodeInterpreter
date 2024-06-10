@@ -175,12 +175,12 @@ std::shared_ptr<Value> Interpreter::visit_for(std::shared_ptr<Node> node) {
             ret.push_back(visit(child[3]));
             if(ret.back()->get_type() == VALUE_ERROR) 
                 return ret.back();
-        }
-
-        for(int index{3}; index < child.size(); ++index) {
-            std::shared_ptr<Value> ret{visit(child[index])};
-            if(ret->get_type() == VALUE_ERROR) 
-                return ret;
+        } else {
+            for(int index{3}; index < child.size(); ++index) {
+                std::shared_ptr<Value> ret{visit(child[index])};
+                if(ret->get_type() == VALUE_ERROR) 
+                    return ret;
+            }
         }
         symbol_table.set(child[0]->get_name(), i + step);
         i = symbol_table.get(child[0]->get_name());

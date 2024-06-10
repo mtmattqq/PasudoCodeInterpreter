@@ -1,5 +1,5 @@
-#include "pseudo.h"
 #include "value.h"
+#include "pseudo.h"
 #include "node.h"
 #include "color.h"
 #include <iostream>
@@ -27,7 +27,7 @@ std::string TypedValue<T>::get_num() {
         ss << value;
         std::string line;
         while(std::getline(ss, ret)) {
-            ret += line + "\n";
+            ret += line;
         }
     }
     return ret;

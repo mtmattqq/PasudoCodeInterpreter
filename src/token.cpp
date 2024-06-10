@@ -7,7 +7,6 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <cstdint>
 
 // template class TypedToken<double>;
 // template class TypedToken<int64_t>;
