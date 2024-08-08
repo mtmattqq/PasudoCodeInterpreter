@@ -50,8 +50,8 @@ class TypedValue: public Value {
 public:
     TypedValue(const std::string& _type, const T &_value) 
         : Value(_type), value(_value) {}
-    virtual std::string get_num();
-    virtual std::string repr();
+    std::string get_num() override;
+    std::string repr() override;
 
 protected:
     T value;
@@ -63,9 +63,9 @@ class BaseAlgoValue: public Value {
 public:
     BaseAlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : Value(VALUE_ALGO), value(_value), algo_name(_algo_name) {}
-    virtual std::string get_num() { return algo_name;}
+    std::string get_num() override { return algo_name;}
     virtual std::shared_ptr<Value> set_args(NodeList&, SymbolTable&, Interpreter&);
-    virtual std::string repr() { return get_num();}
+    std::string repr() override { return get_num();}
 
 protected:
     std::string algo_name;
@@ -76,9 +76,9 @@ class AlgoValue: public BaseAlgoValue {
 public:
     AlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : BaseAlgoValue(_algo_name, _value) {}
-    virtual std::string get_num() { return algo_name;}
-    virtual std::string repr() { return get_num();}
-    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
+    std::string get_num() override { return algo_name;}
+    std::string repr() override { return get_num();}
+    std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
 protected:
 };
 
@@ -86,8 +86,8 @@ class BuiltinAlgoValue: public BaseAlgoValue {
 public:
     BuiltinAlgoValue(const std::string &_algo_name, std::shared_ptr<Node> _value) 
         : BaseAlgoValue(_algo_name, _value) {}
-    virtual std::string get_num() { return algo_name;}
-    virtual std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
+    std::string get_num() override { return algo_name;}
+    std::shared_ptr<Value> execute(NodeList args = {}, SymbolTable *parent = nullptr) override;
     std::shared_ptr<Value> execute_print(const std::string&);
     std::shared_ptr<Value> execute_read();
     std::shared_ptr<Value> execute_read_line();
@@ -95,7 +95,7 @@ public:
     std::shared_ptr<Value> execute_int(const std::string&);
     std::shared_ptr<Value> execute_float(const std::string&);
     std::shared_ptr<Value> execute_string(const std::string&);
-    virtual std::string repr() { return get_num();}
+    std::string repr() override { return get_num();}
 protected:
 };
 
@@ -103,12 +103,12 @@ class ArrayValue: public Value {
 public:
     ArrayValue(ValueList _value) 
         : Value(VALUE_ARRAY), value(_value) {}
-    virtual std::string get_num();
+    std::string get_num() override;
     std::shared_ptr<Value>& operator[](int p);
     void push_back(std::shared_ptr<Value>);
     std::shared_ptr<Value> pop_back();
     std::shared_ptr<Value>& back() { return value.back();};
-    virtual std::string repr() { return get_num();}
+    std::string repr() override { return get_num();}
 
 protected:
     ValueList value;

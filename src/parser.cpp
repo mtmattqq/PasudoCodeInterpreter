@@ -332,9 +332,7 @@ std::shared_ptr<Node> Parser::call(int tab_expect) {
         while(current_tok->get_type() == TOKEN_LEFT_PAREN) {
             advance();
             NodeList args;
-            if(current_tok->get_type() == TOKEN_RIGHT_PAREN) {
-                advance();
-            } else {
+            if(current_tok->get_type() != TOKEN_RIGHT_PAREN)  {
                 args.push_back(expr(tab_expect));
                 if(args.back()->get_type() == NODE_ERROR) return args.back();
                 while(current_tok->get_type() == TOKEN_COMMA) {

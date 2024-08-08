@@ -8,31 +8,31 @@ shell : $(objects)
 shell.o :
 	g++ -c $(flag) shell.cpp
 
-color.o :
+color.o : src/color.cpp src/color.h
 	g++ -c $(flag) src/color.cpp
 
-position.o :
+position.o : src/position.cpp src/position.h
 	g++ -c $(flag) src/position.cpp
 
-token.o :
+token.o : src/token.cpp src/token.h
 	g++ -c $(flag) src/token.cpp
 
-node.o : token.o
+node.o : token.o src/node.cpp src/node.h
 	g++ -c $(flag) src/node.cpp
 
-parser.o : lexer.o color.o token.o
+parser.o : lexer.o color.o token.o src/parser.cpp src/parser.h
 	g++ -c $(flag) src/parser.cpp
 
-lexer.o : color.o token.o
+lexer.o : color.o token.o src/lexer.cpp src/lexer.h
 	g++ -c $(flag) src/lexer.cpp
 
-symboltable.o : 
+symboltable.o : src/symboltable.cpp src/symboltable.h
 	g++ -c $(flag) src/symboltable.cpp
 
-interpreter.o : value.h symboltable.o node.o token.o
+interpreter.o : value.h symboltable.o node.o token.o src/interpreter.cpp src/interpreter.h
 	g++ -c $(flag) src/interpreter.cpp
 
-pseudo.o : value.h color.o node.o
+pseudo.o : value.h color.o node.o src/pseudo.cpp src/pseudo.h
 	g++ -c $(flag) src/pseudo.cpp
 
 clean : 
@@ -45,5 +45,5 @@ run :
 	./shell
 
 test : test/test_inheritance.cpp test/test_unicode.cpp
-	g++ test/test_inheritance.cpp -o test_inheritance
+	g++ test/test_inheritance.cpp -std=c++11 -o test_inheritance
 	./test_inheritance
