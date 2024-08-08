@@ -56,8 +56,9 @@ std::string IfNode::get_node() {
     ss << "(IF " << condition_node->get_node() << " THEN ";
     for(auto node : expr_node)
         ss << node->get_node() << "; ";
-    if(else_node != nullptr)
-        ss << " ELSE " << else_node->get_node();
+    ss << "\nELSE ";
+    for(auto node : else_node)
+        ss << node->get_node() << "; ";
     ss << ")";
     std::string ret;
     std::getline(ss, ret);

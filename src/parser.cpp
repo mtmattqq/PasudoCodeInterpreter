@@ -5,7 +5,9 @@
 #include "parser.h"
 #include "color.h"
 #include "lexer.h"
+#include "node.h"
 #include "token.h"
+#include <iostream>
 #include <string>
 #include <algorithm>
 
@@ -166,13 +168,17 @@ std::shared_ptr<Node> Parser::if_expr(int tab_expect) {
         return std::make_shared<ErrorNode>(error_token);
     }
     advance();
-    NodeList exp = statement(tab_expect + 1);
+    NodeList exp;
+    if(current_tok->get_type() == TOKEN_NEWLINE)
+        exp = statement(tab_expect + 1);
+    else
+        exp = NodeList{expr(tab_expect)};
     for(auto node : exp)
         if(node->get_type() == NODE_ERROR) return node;
-    std::shared_ptr<Node> els = nullptr;
+    NodeList els;
     if(current_tok->get_type() == TOKEN_NEWLINE) {
         advance();
-        while(current_tok->get_type() == TOKEN_TAB) {
+        for(int i{0}; i < tab_expect; ++i) {
             advance();
         }
     }
@@ -180,10 +186,12 @@ std::shared_ptr<Node> Parser::if_expr(int tab_expect) {
         advance();
         if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "if") {
             advance();
-            els = if_expr(tab_expect);
+            els = NodeList{if_expr(tab_expect)};
         } else {
-            els = expr(tab_expect);
+            els = statement(tab_expect + 1);
         }
+    } else {
+        while(current_tok->get_type() != TOKEN_NEWLINE) back();
     }
     return std::make_shared<IfNode>(condition, exp, els);
 }

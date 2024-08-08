@@ -5,6 +5,7 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <memory>
@@ -117,20 +118,21 @@ protected:
 
 class IfNode: public Node {
 public:
-    IfNode(std::shared_ptr<Node> condition, NodeList expr, std::shared_ptr<Node> _else_node)
+    IfNode(std::shared_ptr<Node> condition, NodeList expr, NodeList _else_node)
         : condition_node(condition), expr_node(expr), else_node(_else_node) {}
     std::string get_node() override;
     NodeList get_child() override {
-        NodeList child{condition_node, else_node};
-        for(auto node : expr_node) child.push_back(node);
-        return child;
+        throw std::runtime_error("should not call get_child on if node");
     }
+    const std::shared_ptr<Node>& get_condition() { return condition_node;}
+    const NodeList& get_expr() { return expr_node;}
+    const NodeList& get_else() { return else_node;}
     std::string get_type() override{ return NODE_IF;}
     std::shared_ptr<Token> get_tok() override { return nullptr;}
     std::string get_name() override { return "";}
 protected:
-    std::shared_ptr<Node> condition_node, else_node; 
-    NodeList expr_node;
+    std::shared_ptr<Node> condition_node; 
+    NodeList expr_node, else_node;
 };
 
 class ForNode: public Node {

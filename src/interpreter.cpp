@@ -3,7 +3,9 @@
 /// --------------------
 
 #include "interpreter.h"
+#include "node.h"
 #include "value.h"
+#include <iostream>
 #include <memory>
 #include <functional>
 
@@ -128,20 +130,28 @@ std::shared_ptr<Value> Interpreter::visit_array_assign(std::shared_ptr<Node> nod
 }
 
 std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
-    NodeList child = node->get_child();
-    std::shared_ptr<Value> cond = visit(child[0]);
+    IfNode* if_node = dynamic_cast<IfNode*>(node.get());
+    std::shared_ptr<Value> cond = visit(if_node->get_condition());
     if(cond->get_type() == VALUE_ERROR)
         return cond;
     if(std::stoll(cond->get_num()) == 1) {
         std::shared_ptr<Value> ret;
-        for(int i{2}; i < child.size(); ++i) {
-            ret = visit(child[i]);
-            if(ret->get_type() == VALUE_ERROR)
+        for(auto expr : if_node->get_expr()) {
+            ret = visit(expr);
+            if(ret->get_type() == VALUE_ERROR) {
                 return ret;
+            }
         }
         return ret;
-    } else if(child[1] != nullptr) {
-        return visit(child[1]);
+    } else if(!if_node->get_else().empty()) {
+        std::shared_ptr<Value> ret;
+        for(auto expr : if_node->get_else()) {
+            ret = visit(expr);
+            if(ret->get_type() == VALUE_ERROR) {
+                return ret;
+            }
+        }
+        return ret;
     }
     return std::make_shared<TypedValue<int64_t>>(VALUE_INT, 0);
 }
@@ -185,6 +195,8 @@ std::shared_ptr<Value> Interpreter::visit_for(std::shared_ptr<Node> node) {
         symbol_table.set(child[0]->get_name(), i + step);
         i = symbol_table.get(child[0]->get_name());
     }
+    if(child.size() != 4)
+        ret.push_back(std::make_shared<Value>());
     return std::make_shared<ArrayValue>(ret);
 }
 
