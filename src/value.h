@@ -107,12 +107,13 @@ public:
     std::shared_ptr<Value>& operator[](int p);
     void push_back(std::shared_ptr<Value>);
     std::shared_ptr<Value> pop_back();
+    std::shared_ptr<Value>& size() { return sz = std::make_shared<TypedValue<int64_t>>(VALUE_INT, value.size());};
     std::shared_ptr<Value>& back() { return value.back();};
     std::string repr() override { return get_num();}
 
+    std::shared_ptr<Value> sz, error;
 protected:
     ValueList value;
-    std::shared_ptr<Value> error;
 };
 
 std::shared_ptr<Value> operator+(std::shared_ptr<Value>, std::shared_ptr<Value>);

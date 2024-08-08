@@ -390,7 +390,7 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     NodeList ast = parser.parse();
     
     for(auto node : ast) {
-        if(node->get_type() == NODE_ERROR)
+        // if(node->get_type() == NODE_ERROR)
             std::cout << "Nodes: " << node->get_node() << "\n";
         if(node->get_type() == NODE_ERROR) return "ABORT";
     }

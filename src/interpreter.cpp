@@ -52,6 +52,9 @@ std::shared_ptr<Value> Interpreter::visit(std::shared_ptr<Node> node) {
     if(node->get_type() == NODE_ARRASSIGN) {
         return visit_array_assign(node);
     }
+    if(node->get_type() == NODE_MEMACCESS) {
+        return visit_member_access(node);
+    }
     return std::make_shared<ErrorValue>(VALUE_ERROR, "Fail to get result\n");
 }
 
@@ -128,6 +131,40 @@ std::shared_ptr<Value> Interpreter::visit_array_assign(std::shared_ptr<Node> nod
     std::shared_ptr<Value> &arr{visit_array_access(child[0])}, value{visit(child[1])};
     return arr = value;
 }
+
+std::shared_ptr<Value>& Interpreter::visit_member_access(std::shared_ptr<Node> node) {
+    NodeList chlid{node->get_child()};
+    std::shared_ptr<Value> obj{visit(chlid[0])};
+    std::shared_ptr<Node> &member{chlid[1]};
+    if(member->get_type() != NODE_VARACCESS && member->get_type() != NODE_ALGOCALL) {
+        error = std::make_shared<ErrorValue>(VALUE_ERROR, "Expect one argument for push_back\n");
+        return error;
+    }
+    if(obj->get_type() == VALUE_ARRAY) {
+        ArrayValue *arr_obj = dynamic_cast<ArrayValue*>(obj.get());
+        if(member->get_name() == "pop_back") {
+            arr_obj->pop_back();
+            return arr_obj->back();
+        }
+        if(member->get_name() == "push_back") {
+            if(member->get_child().size() != 1) {
+                error = std::make_shared<ErrorValue>(VALUE_ERROR, "Expect one argument for push_back\n");
+                return error;
+            }
+            std::shared_ptr<Value> arg{visit(member->get_child()[0])};
+            arr_obj->push_back(arg);
+            return arr_obj->back();
+        }
+        if(member->get_name() == "size") {
+            return arr_obj->size();
+        }
+        if(member->get_name() == "back") {
+            return arr_obj->back();
+        }
+    }
+    error = std::make_shared<ErrorValue>(VALUE_ERROR, obj->get_num() + " has no member" + member->get_name() + "\n");
+    return error;
+} 
 
 std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
     IfNode* if_node = dynamic_cast<IfNode*>(node.get());
