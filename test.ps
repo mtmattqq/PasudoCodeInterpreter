@@ -1,11 +1,14 @@
-a <- 4
-for i <- 1 to 10 do
-    a <- i
-    if i < a then
-        print("i < a")
-        print("this is printer")
-    else
-        print("i >= a")
-        print("printer for high priority")
-    if true then
-        print("True")
+n <- int(read())
+
+a <- for i <- 1 to 100 do 0
+
+for i <- 1 to n do
+    a[i] <- int(read())
+
+Algorithm find_sum(arr, n):
+    ret <- 0
+    for i <- 1 to n do
+        ret <- ret + a[i]
+    ret
+
+print(find_sum(a, n))

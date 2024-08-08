@@ -387,14 +387,14 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     Lexer lexer(file_name, text);
     TokenList tokens = lexer.make_tokens();
     if(tokens.empty()) return "";
-    // if(tokens[0]->get_type() == TOKEN_ERROR)
+    if(tokens[0]->get_type() == TOKEN_ERROR)
         std::cout << "Tokens: " << tokens << "\n";
 
     Parser parser(tokens);
     NodeList ast = parser.parse();
     
     for(auto node : ast) {
-        // if(node->get_type() == NODE_ERROR)
+        if(node->get_type() == NODE_ERROR)
             std::cout << "Nodes: " << node->get_node() << "\n";
         if(node->get_type() == NODE_ERROR) return "ABORT";
     }
