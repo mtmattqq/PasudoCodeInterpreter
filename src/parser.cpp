@@ -13,7 +13,7 @@
 
 std::shared_ptr<Token> Parser::advance() {
     tok_index++;
-    if(tok_index < tokens.size())
+    if(tok_index >= 0 && tok_index < tokens.size())
         current_tok = tokens[tok_index];
     else
         current_tok = std::make_shared<Token>();
@@ -22,7 +22,7 @@ std::shared_ptr<Token> Parser::advance() {
 
 std::shared_ptr<Token> Parser::back() {
     tok_index--;
-    if(tok_index >= 0)
+    if(tok_index >= 0 && tok_index < tokens.size())
         current_tok = tokens[tok_index];
     else
         current_tok = std::make_shared<Token>();
@@ -176,11 +176,13 @@ std::shared_ptr<Node> Parser::if_expr(int tab_expect) {
     for(auto node : exp)
         if(node->get_type() == NODE_ERROR) return node;
     NodeList els;
+    bool has_newline = false;
     if(current_tok->get_type() == TOKEN_NEWLINE) {
         advance();
         for(int i{0}; i < tab_expect; ++i) {
             advance();
         }
+        has_newline = true;
     }
     if(current_tok->get_type() == TOKEN_KEYWORD && current_tok->get_value() == "else") {
         advance();
@@ -190,8 +192,12 @@ std::shared_ptr<Node> Parser::if_expr(int tab_expect) {
         } else {
             els = statement(tab_expect + 1);
         }
-    } else {
-        while(current_tok->get_type() != TOKEN_NEWLINE) back();
+    } else if(has_newline) {
+        std::cout << "Before checking" << "\n";
+        while(current_tok->get_type() != TOKEN_NEWLINE) {
+            std::cout << current_tok->get_type() << "\n";
+            back();
+        }
     }
     return std::make_shared<IfNode>(condition, exp, els);
 }
