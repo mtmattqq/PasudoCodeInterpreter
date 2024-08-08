@@ -23,12 +23,8 @@ std::string TypedValue<T>::get_num() {
     if(type == VALUE_FLOAT || type == VALUE_INT) {
         ss << value;
         std::getline(ss, ret);
-    } else if(type == VALUE_STRING) {
-        ss << value;
-        std::string line;
-        while(std::getline(ss, ret)) {
-            ret += line;
-        }
+    } else if(type == VALUE_STRING || type == VALUE_ERROR) {
+        ret = value;
     }
     return ret;
 }
@@ -262,7 +258,7 @@ std::shared_ptr<Value> operator/(std::shared_ptr<Value> a, std::shared_ptr<Value
 
 std::shared_ptr<Value> operator%(std::shared_ptr<Value> a, std::shared_ptr<Value> b) {
     if(a->get_type() != VALUE_INT || b->get_type() != VALUE_INT) 
-        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Float doesn't have \"%\" operation\n" RESET);
+        return std::make_shared<ErrorValue>(VALUE_ERROR, Color(0xFF, 0x39, 0x6E).get() + "Cannot apply \"%\" operation on float\n" RESET);
     return std::make_shared<TypedValue<int64_t>>(
         VALUE_INT, std::stoll(a->get_num()) % std::stoll(b->get_num()));
 }
@@ -403,7 +399,10 @@ std::string Run(std::string file_name, std::string text, SymbolTable &global_sym
     ArrayValue *ret{new ArrayValue(ValueList(0))};
     for(auto node : ast) {
         ret->push_back(interpreter.visit(node));
-        if(ret->back()->get_type() == VALUE_ERROR) return "ABORT";
+        if(ret->back()->get_type() == VALUE_ERROR) {
+            std::cout << ret->back()->get_num() << "\n";
+            return "ABORT";
+        }
     }
 
     while(ret->get_type() == VALUE_ARRAY && ret->back()->get_type() == VALUE_ARRAY) {
