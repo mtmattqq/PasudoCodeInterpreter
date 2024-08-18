@@ -54,11 +54,11 @@ Let's make the pseudo code a actual programming language.
 
 ```pseudo
 if a < b and a >= 10 then
-    var a <- 10
+    a <- 10
 else if a < 20 then
-    var a <- 1.5
+    a <- 1.5
 else
-    var a <- 8
+    a <- 8
 ```
 
 ### for statement
@@ -67,9 +67,9 @@ else
 
 ```pseudo
 for i <- 1 to 10 do 
-    var i <- i + 1
+    i <- i + 1
 for i <- 1 to 100 step 10 do
-    var i <- i + 1
+    i <- i + 1
 ```
 
 ### while statement
@@ -78,8 +78,8 @@ for i <- 1 to 100 step 10 do
 
 ```pseudo
 while i < 100 and i > 10
-    var i <- i * 2
-    var i <- i * 3 - 1
+    i <- i * 2
+    i <- i * 3 - 1
 ```
 
 ### repeat statement
@@ -87,7 +87,7 @@ while i < 100 and i > 10
 - `repeat expr until condition`
 
 ```pseudo
-repeat var i < i *2 until i > 1000
+repeat i <- i * 2 until i > 1000
 ```
 
 ### Function
