@@ -112,13 +112,13 @@ std::shared_ptr<Value>& Interpreter::visit_array_access(std::shared_ptr<Node> no
     NodeList child{node->get_child()};
     std::shared_ptr<Value> arr{visit(child[0])}, index{visit(child[1])};
     if(arr->get_type() != VALUE_ARRAY) {
-        error = std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array\n");
+        error = std::make_shared<ErrorValue>(VALUE_ERROR, "Access can only apply on array, find " + 
+            arr->get_type() + "\n");
         return error;
     }
     algo_call_temp = arr;
     return dynamic_cast<ArrayValue*>(arr.get())->operator[](std::stoll(index->get_num()));
 }
-
 
 std::shared_ptr<Value> Interpreter::visit_array_assign(std::shared_ptr<Node> node) {
     NodeList child{node->get_child()};
@@ -159,13 +159,16 @@ std::shared_ptr<Value> Interpreter::visit_if(std::shared_ptr<Node> node) {
 std::shared_ptr<Value> Interpreter::visit_for(std::shared_ptr<Node> node) {
     NodeList child = node->get_child();
     std::shared_ptr<Value> i = visit(child[0]);
+    if (i->get_type() == VALUE_ERROR) return i;
     std::shared_ptr<Value> step;
     if(child[2] != nullptr) {
         step = visit(child[2]);
+        if (step->get_type() == VALUE_ERROR) return step;
     } else {
         step = std::make_shared<TypedValue<int64_t>>(VALUE_INT, 1);
     }
     std::shared_ptr<Value> end_value = visit(child[1]);
+    if(end_value->get_type() == VALUE_ERROR) return end_value;
     std::function<bool(std::shared_ptr<Value>, std::shared_ptr<Value>)> condition;
     if(stod(step->get_num()) > 0) {
         condition = [](std::shared_ptr<Value> i, std::shared_ptr<Value> end) -> bool {
